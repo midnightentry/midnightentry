@@ -1,249 +1,314 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>For Bae 💌</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#050814" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+  <title>Notes</title>
+
+  <!-- Share preview (neutral) -->
+  <meta property="og:title" content="Notes" />
+  <meta property="og:description" content="Personal workspace." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://midnightentry.github.io/midnightentry/" />
+  <meta property="og:image" content="https://midnightentry.github.io/midnightentry/og.png" />
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Notes" />
+  <meta name="twitter:description" content="Personal workspace." />
+  <meta name="twitter:image" content="https://midnightentry.github.io/midnightentry/og.png" />
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+
   <style>
+    :root{ color-scheme: dark; }
+
     body{
-      margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      background: radial-gradient(circle at top, #ffe1ec, #fff);
-      color:#222;
+      margin:0; min-height:100vh; display:grid; place-items:center;
+      font-family: system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+      background:
+        radial-gradient(900px 500px at 20% 20%, rgba(90,160,255,.35), transparent 60%),
+        radial-gradient(900px 500px at 80% 30%, rgba(46,93,255,.25), transparent 55%),
+        radial-gradient(900px 600px at 50% 90%, rgba(0,255,240,.12), transparent 60%),
+        linear-gradient(180deg, #071022, #050814);
+      color: rgba(255,255,255,.95);
     }
+
     .card{
-      width:min(620px, 92vw);
-      background:rgba(255,255,255,0.88);
-      border:1px solid rgba(0,0,0,0.06);
-      border-radius:24px;
-      padding:28px 22px;
-      box-shadow: 0 18px 60px rgba(0,0,0,0.08);
+      width:min(560px, 92vw);
+      padding:30px 24px;
+      border-radius:22px;
+      background:rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.12);
+      box-shadow:0 25px 60px rgba(0,0,0,.35);
+      backdrop-filter: blur(12px);
+    }
+
+    h1{ margin:0 0 10px; font-size:28px; letter-spacing:.2px; }
+    p{ margin:0 0 18px; opacity:.9; line-height:1.45; }
+
+    .btns{ display:grid; gap:12px; margin-top:14px; }
+
+    button, a.btn{
+      padding:14px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.18);
+      background:rgba(255,255,255,.08);
+      color:white;
+      font-weight:900;
+      cursor:pointer;
+      text-decoration:none;
       text-align:center;
-      position:relative;
-      overflow:hidden;
-    }
-
-    /* Floating hearts layer */
-    .float-layer{
-      position:absolute;
-      inset:0;
-      pointer-events:none;
-      overflow:hidden;
-      z-index:0;
-    }
-    .card > *:not(.float-layer){
-      position:relative;
-      z-index:1;
-    }
-    .heart{
-      position:absolute;
-      bottom:-30px;
-      font-size:18px;
-      opacity:0.85;
-      animation: floatUp linear forwards;
-      filter: drop-shadow(0 6px 10px rgba(0,0,0,0.10));
-    }
-    @keyframes floatUp{
-      0%   { transform: translateY(0) translateX(0) rotate(0deg); opacity:0; }
-      10%  { opacity:0.9; }
-      100% { transform: translateY(-120vh) translateX(var(--drift)) rotate(var(--spin)); opacity:0; }
-    }
-
-    .hearts{ font-size:28px; letter-spacing:6px; margin-bottom:10px; }
-    h1{ font-size:34px; margin:8px 0 6px; }
-    p{ font-size:16px; line-height:1.5; margin:0 0 16px; color:#333; }
-    .name{ font-weight:800; }
-    .btns{ display:flex; gap:12px; justify-content:center; margin-top:18px; flex-wrap:wrap; }
-    button{
-      border:0; border-radius:999px; padding:12px 18px; font-size:16px; cursor:pointer;
-      box-shadow: 0 10px 20px rgba(0,0,0,0.10);
-      transition: transform 0.08s ease;
+      transition:.18s ease;
+      -webkit-tap-highlight-color: transparent;
       user-select:none;
     }
-    button:active{ transform: scale(0.98); }
-    #yes{ background:#ff3b7a; color:white; }
-    #no{
-      background:#f2f2f2; color:#222;
-      position:relative;
-    }
-    .hidden{ display:none; }
-    .success{
-      margin-top:16px;
-      padding:16px;
-      border-radius:18px;
-      background:#fff0f6;
-      border:1px solid rgba(255, 59, 122, 0.18);
-      text-align:left;
-    }
-    .success h2{ margin:0 0 10px; text-align:center; }
-    .pill{
-      display:inline-block;
-      padding:6px 10px;
-      border-radius:999px;
-      background:white;
-      border:1px solid rgba(0,0,0,0.08);
-      margin:6px 6px 0 0;
+
+    button:hover, a.btn:hover{ background:rgba(255,255,255,.14); }
+    button:active, a.btn:active{ transform: translateY(1px); }
+
+    .note{
+      margin-top:18px;
+      padding:14px;
+      border-radius:14px;
+      background:rgba(0,0,0,.25);
       font-size:13px;
+      border:1px solid rgba(255,255,255,.10);
+      line-height:1.45;
     }
-    .center{ text-align:center; }
-    .footer{
-      margin-top:16px;
-      font-size:12.5px;
-      color:#666;
+    .small{ margin-top:12px; font-size:12px; opacity:.78; line-height:1.45; }
+
+    hr{
+      border:0;
+      height:1px;
+      background: rgba(255,255,255,.10);
+      margin: 18px 0;
     }
-    .mono{
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+    /* PIN overlay */
+    #lock{
+      position:fixed; inset:0;
+      display:grid; place-items:center;
+      background: rgba(5,8,20,.95);
+      z-index:9999;
+      padding: 22px;
     }
+    #lockCard{
+      width:min(420px, 92vw);
+      background:rgba(255,255,255,.06);
+      border-radius:18px;
+      padding:22px;
+      border:1px solid rgba(255,255,255,.12);
+      box-shadow:0 24px 60px rgba(0,0,0,.45);
+    }
+    #pin{
+      width:100%;
+      padding:14px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.18);
+      background:rgba(255,255,255,.08);
+      color:white;
+      text-align:center;
+      font-size:18px;
+      letter-spacing:6px;
+      outline:none;
+    }
+    #unlock{
+      margin-top:12px;
+      width:100%;
+      padding:14px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.18);
+      background:rgba(255,255,255,.10);
+      color:white;
+      font-weight:900;
+      cursor:pointer;
+    }
+    #lockMsg{ margin-top:10px; font-size:13px; opacity:.85; }
+
+    /* Fade overlay */
+    #fade{
+      position:fixed; inset:0;
+      background:#050814;
+      opacity:0;
+      transition:opacity .25s ease;
+      z-index:9998;
+      pointer-events:none;
+    }
+    #fade.on{ opacity:1; }
   </style>
+
+  <link rel="preconnect" href="https://app.element.io">
+  <link rel="preconnect" href="https://meet.jit.si">
 </head>
 
 <body>
-  <div class="card">
-    <div class="float-layer" aria-hidden="true"></div>
+  <div id="fade"></div>
 
-    <div class="hearts">💗 💞 💘</div>
-
-    <h1>Hey <span class="name">Bae</span>…</h1>
-    <p>
-      Okay listen… I tried to be normal and just ask, but my spirit said: "make a website." 😭<br><br>
-      So, <span class="name">Kelani</span>… will you be my Valentine? 💌
-    </p>
-
-    <p id="countdown" style="margin:10px 0 0; font-weight:700;">
-      Countdown to Valentine's Day: …
-    </p>
-    <p style="margin:6px 0 0; font-size:14px; font-style:italic;">
-      Bae… choose wisely 😭💗
-    </p>
-
-    <div class="btns">
-      <button id="yes">Yes 💖</button>
-      <button id="no">No 🙃</button>
-    </div>
-
-    <div id="success" class="success hidden">
-      <h2>YUUUP!! That's my Bae 😭💘</h2>
-
-      <p class="center" style="margin:0 0 10px;">
-        No pressure for a big date btw…<br>
-        I just want us to do a cute little <strong>gift exchange</strong> 💝
-      </p>
-
-      <div class="center" style="margin:10px 0 6px;">
-        <span class="pill">Flowers? 🌸</span>
-        <span class="pill">Snacks? 🍫</span>
-        <span class="pill">Something soft? 🧸</span>
-        <span class="pill">A lil note? 💌</span>
+  <!-- PIN LOCK -->
+  <div id="lock">
+    <div id="lockCard">
+      <div style="font-weight:900; font-size:20px; margin-bottom:8px;">🔒 Access PIN</div>
+      <div style="opacity:.85; font-size:14px; margin-bottom:12px; line-height:1.35;">
+        Private entry.
       </div>
-
-      <p style="margin:12px 0 10px;">
-        Text me this so I know it's real:
-        <span class="mono"><strong>"Much appreciated, Bianca 🧍🏾‍♀️💖"</strong></span>
-      </p>
-
-      <p style="margin:0;">
-        (Also… you look good today. Yes, even if you're reading this in bonnet. 😌)
-      </p>
-    </div>
-
-    <div class="footer">
-      Made with love + mischief by Bianca 💌
+      <input id="pin" placeholder="••••" inputmode="numeric" autocomplete="one-time-code" />
+      <button id="unlock" type="button">Unlock</button>
+      <div id="lockMsg"></div>
     </div>
   </div>
 
+  <main class="card">
+    <h1>Notes</h1>
+    <p>Personal workspace.</p>
+
+    <div class="btns">
+      <a class="btn" id="chatBtn" href="#" rel="noopener">Open</a>
+
+      <a class="btn" id="videoCall" href="#" target="_blank" rel="noopener">Video Call</a>
+      <a class="btn" id="audioCall" href="#" target="_blank" rel="noopener">Audio Call</a>
+
+      <button id="copyCall" type="button">Copy Call Link</button>
+      <button id="newCall" type="button">New Call Link</button>
+
+      <hr>
+
+      <button id="panicLock" type="button">Lock</button>
+    </div>
+
+    <div class="note">
+      Install like an app:
+      <br>• iPhone: Safari → Share → Add to Home Screen
+      <br>• Android: Chrome → ⋮ → Add to Home screen
+    </div>
+
+    <div class="small">
+      Tip: If a share preview still shows an old title, share with <b>?v=2</b> at the end of the link once.
+    </div>
+  </main>
+
   <script>
-    // Floating hearts ✨
-    const floatLayer = document.querySelector('.float-layer');
-    const heartChars = ["💗","💞","💘","💕","💖"];
-
-    function spawnHeart(){
-      if(!floatLayer) return;
-
-      const h = document.createElement('div');
-      h.className = 'heart';
-      h.textContent = heartChars[Math.floor(Math.random()*heartChars.length)];
-
-      const left = Math.random() * 100;
-      h.style.left = left + '%';
-
-      const size = 14 + Math.random() * 18; // 14–32px
-      h.style.fontSize = size + 'px';
-
-      const duration = 4 + Math.random() * 4; // 4–8s
-      h.style.animationDuration = duration + 's';
-
-      const drift = (Math.random() * 120 - 60) + 'px'; // -60 to +60
-      const spin = (Math.random() * 120 - 60) + 'deg'; // -60 to +60
-      h.style.setProperty('--drift', drift);
-      h.style.setProperty('--spin', spin);
-
-      floatLayer.appendChild(h);
-      setTimeout(() => h.remove(), (duration * 1000) + 300);
+    // Register PWA service worker
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("./sw.js").catch(()=>{});
     }
-    setInterval(spawnHeart, 350);
 
-    // Buttons + countdown
-    const noBtn = document.getElementById('no');
-    const yesBtn = document.getElementById('yes');
-    const success = document.getElementById('success');
-    const countdownEl = document.getElementById('countdown');
+    /* ===== CONFIG ===== */
 
-    // Countdown to Feb 14, 2026 (local time)
-    const target = new Date(2026, 1, 14, 0, 0, 0); // month is 0-based
+    // PIN = 1127 (SHA-256)
+    const PIN_HASH = "7377a71607a8dabc029ab10e7a6a895b92e87762538b10ce8b10c4c9ddc74448";
+    const FADE_MS = 220;
 
-    function updateCountdown(){
-      const now = new Date();
-      let diff = target - now;
+    // Element private room
+    const ROOM_ID = "!QCDoDUrbQEiLoiTDVl:matrix.org";
+    const ELEMENT_ROOM_URL = "https://app.element.io/#/room/" + ROOM_ID;
 
-      if (!countdownEl) return;
+    // Auto-lock after inactivity
+    const AUTO_LOCK_AFTER_MS = 2 * 60 * 1000; // 2 minutes
 
-      if (diff <= 0){
-        countdownEl.textContent = "It's Valentine's Day 😭💘";
+    async function sha256Hex(text){
+      const data = new TextEncoder().encode(text);
+      const buf = await crypto.subtle.digest("SHA-256", data);
+      return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("");
+    }
+
+    function fadeThen(action){
+      document.getElementById("fade").classList.add("on");
+      setTimeout(action, FADE_MS);
+    }
+
+    function lockNow(message=""){
+      document.getElementById("lock").style.display = "grid";
+      document.getElementById("lockMsg").textContent = message;
+      sessionStorage.removeItem("unlocked");
+    }
+
+    function unlockNow(){
+      document.getElementById("lock").style.display = "none";
+      document.getElementById("lockMsg").textContent = "";
+      sessionStorage.setItem("unlocked","1");
+      resetIdleTimer();
+    }
+
+    document.getElementById("unlock").addEventListener("click", async () => {
+      const pin = (document.getElementById("pin").value || "").trim();
+      const h = await sha256Hex(pin);
+      if (h === PIN_HASH) {
+        fadeThen(() => {
+          unlockNow();
+          document.getElementById("fade").classList.remove("on");
+        });
+      } else {
+        document.getElementById("lockMsg").textContent = "Wrong PIN";
+      }
+    });
+
+    document.getElementById("pin").addEventListener("keydown",(e)=>{
+      if (e.key === "Enter") document.getElementById("unlock").click();
+    });
+
+    document.getElementById("chatBtn").addEventListener("click", (e) => {
+      e.preventDefault();
+      if (sessionStorage.getItem("unlocked") !== "1") {
+        lockNow("Enter PIN first.");
         return;
       }
-
-      const totalSeconds = Math.floor(diff / 1000);
-      const days = Math.floor(totalSeconds / 86400);
-      const hours = Math.floor((totalSeconds % 86400) / 3600);
-      const minutes = Math.floor((totalSeconds % 3600) / 60);
-      const seconds = totalSeconds % 60;
-
-      const pad = (n) => String(n).padStart(2, '0');
-
-      if (days > 0){
-        countdownEl.textContent = `Countdown to Valentine's Day: ${days}d ${pad(hours)}h ${pad(minutes)}m ${pad(seconds)}s 💘`;
-      } else {
-        countdownEl.textContent = `Countdown to Valentine's Day: ${pad(hours)}h ${pad(minutes)}m ${pad(seconds)}s 💘`;
-      }
-    }
-    setInterval(updateCountdown, 1000);
-    updateCountdown();
-
-    function moveNo(){
-      const card = document.querySelector('.card');
-      const rect = card.getBoundingClientRect();
-      const btnRect = noBtn.getBoundingClientRect();
-
-      const padding = 18;
-      const maxX = rect.width - btnRect.width - padding;
-      const maxY = rect.height - btnRect.height - padding;
-
-      const x = Math.max(padding, Math.floor(Math.random() * maxX));
-      const y = Math.max(padding, Math.floor(Math.random() * maxY));
-
-      noBtn.style.position = 'absolute';
-      noBtn.style.left = x + 'px';
-      noBtn.style.top = y + 'px';
-    }
-
-    noBtn.addEventListener('mouseenter', moveNo);
-    noBtn.addEventListener('click', moveNo);
-
-    yesBtn.addEventListener('click', () => {
-      success.classList.remove('hidden');
-      yesBtn.textContent = "Yes 💖 (locked in)";
-      noBtn.style.display = 'none';
+      fadeThen(() => window.location.href = ELEMENT_ROOM_URL);
     });
+
+    // Jitsi rotating call link
+    function generateRoom(){
+      const bytes = new Uint8Array(8);
+      crypto.getRandomValues(bytes);
+      return Array.from(bytes, b => b.toString(16).padStart(2,"0")).join("");
+    }
+
+    function newCall(){
+      const room = "notes-" + generateRoom();
+      const base = "https://meet.jit.si/" + room;
+      document.getElementById("videoCall").href = base;
+      document.getElementById("audioCall").href = base + "#config.startWithVideoMuted=true";
+      window.currentCall = base;
+    }
+    newCall();
+
+    document.getElementById("copyCall").addEventListener("click", async () => {
+      try{
+        await navigator.clipboard.writeText(window.currentCall);
+        alert("Copied");
+      } catch {
+        alert("Copy failed. Link:\n\n" + window.currentCall);
+      }
+    });
+
+    document.getElementById("newCall").addEventListener("click", () => {
+      newCall();
+      alert("New link created");
+    });
+
+    document.getElementById("panicLock").addEventListener("click", () => {
+      lockNow("Locked.");
+    });
+
+    // Auto-lock after inactivity
+    let idleTimer = null;
+    function resetIdleTimer(){
+      if (sessionStorage.getItem("unlocked") !== "1") return;
+      clearTimeout(idleTimer);
+      idleTimer = setTimeout(() => lockNow("Locked (inactive)."), AUTO_LOCK_AFTER_MS);
+    }
+    ["mousemove","keydown","touchstart","click","scroll"].forEach(evt => {
+      window.addEventListener(evt, resetIdleTimer, { passive:true });
+    });
+
+    // On load
+    if (sessionStorage.getItem("unlocked") === "1") unlockNow();
+    else lockNow();
   </script>
 </body>
 </html>
