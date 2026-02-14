@@ -27,6 +27,12 @@ self.addEventListener("fetch", (event) => {
   event.respondWith(
     caches.match(event.request)
       .then((cached) => cached || fetch(event.request))
-      .catch(() => caches.match("./index.html"))
+      .catch(() => {
+        // Fallback to index.html only for navigation requests
+        if (event.request.mode === 'navigate') {
+          return caches.match("./index.html");
+        }
+        return Promise.reject('No cached response and network failed');
+      })
   );
 });

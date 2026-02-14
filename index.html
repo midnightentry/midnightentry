@@ -235,10 +235,12 @@
     // Auto-lock after inactivity
     let idleTimer = null;
     let debounceTimer = null;
+    let listenersActive = false;
     const IDLE_EVENTS = ["mousemove","keydown","touchstart","click","scroll"];
 
     function resetIdleTimer(){
       if (sessionStorage.getItem("unlocked") !== "1") return;
+      clearTimeout(debounceTimer);
       clearTimeout(idleTimer);
       idleTimer = setTimeout(() => lockNow("Locked (inactive)."), AUTO_LOCK_AFTER_MS);
     }
@@ -249,15 +251,19 @@
     }
 
     function addIdleListeners(){
+      if (listenersActive) return;
       IDLE_EVENTS.forEach(evt => {
         window.addEventListener(evt, debouncedResetIdleTimer, { passive:true });
       });
+      listenersActive = true;
     }
 
     function removeIdleListeners(){
+      if (!listenersActive) return;
       IDLE_EVENTS.forEach(evt => {
         window.removeEventListener(evt, debouncedResetIdleTimer, { passive:true });
       });
+      listenersActive = false;
     }
 
     function lockNow(message=""){
