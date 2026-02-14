@@ -1,6 +1,6 @@
 {
-  "name": "Midnight Entry",
-  "short_name": "Entry",
+  "name": "Notes",
+  "short_name": "Notes",
   "start_url": ".",
   "scope": ".",
   "display": "standalone",
