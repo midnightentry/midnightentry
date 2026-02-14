@@ -211,48 +211,87 @@
     // Auto-lock after inactivity
     const AUTO_LOCK_AFTER_MS = 2 * 60 * 1000; // 2 minutes
 
+    /* ===== CACHED DOM REFERENCES ===== */
+    const fadeEl = document.getElementById("fade");
+    const lockEl = document.getElementById("lock");
+    const lockMsgEl = document.getElementById("lockMsg");
+    const pinEl = document.getElementById("pin");
+    const unlockBtn = document.getElementById("unlock");
+    const chatBtn = document.getElementById("chatBtn");
+    const videoCallEl = document.getElementById("videoCall");
+    const audioCallEl = document.getElementById("audioCall");
+
     async function sha256Hex(text){
       const data = new TextEncoder().encode(text);
       const buf = await crypto.subtle.digest("SHA-256", data);
-      return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("");
+      return Array.from(new Uint8Array(buf), b => b.toString(16).padStart(2, "0")).join("");
     }
 
     function fadeThen(action){
-      document.getElementById("fade").classList.add("on");
+      fadeEl.classList.add("on");
       setTimeout(action, FADE_MS);
     }
 
+    // Auto-lock after inactivity
+    let idleTimer = null;
+    let debounceTimer = null;
+    const IDLE_EVENTS = ["mousemove","keydown","touchstart","click","scroll"];
+
+    function resetIdleTimer(){
+      clearTimeout(idleTimer);
+      idleTimer = setTimeout(() => lockNow("Locked (inactive)."), AUTO_LOCK_AFTER_MS);
+    }
+
+    function debouncedResetIdleTimer(){
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(resetIdleTimer, 100);
+    }
+
+    function addIdleListeners(){
+      IDLE_EVENTS.forEach(evt => {
+        window.addEventListener(evt, debouncedResetIdleTimer, { passive:true });
+      });
+    }
+
+    function removeIdleListeners(){
+      IDLE_EVENTS.forEach(evt => {
+        window.removeEventListener(evt, debouncedResetIdleTimer);
+      });
+    }
+
     function lockNow(message=""){
-      document.getElementById("lock").style.display = "grid";
-      document.getElementById("lockMsg").textContent = message;
+      lockEl.style.display = "grid";
+      lockMsgEl.textContent = message;
       sessionStorage.removeItem("unlocked");
+      removeIdleListeners();
     }
 
     function unlockNow(){
-      document.getElementById("lock").style.display = "none";
-      document.getElementById("lockMsg").textContent = "";
+      lockEl.style.display = "none";
+      lockMsgEl.textContent = "";
       sessionStorage.setItem("unlocked","1");
+      addIdleListeners();
       resetIdleTimer();
     }
 
-    document.getElementById("unlock").addEventListener("click", async () => {
-      const pin = (document.getElementById("pin").value || "").trim();
+    unlockBtn.addEventListener("click", async () => {
+      const pin = (pinEl.value || "").trim();
       const h = await sha256Hex(pin);
       if (h === PIN_HASH) {
         fadeThen(() => {
           unlockNow();
-          document.getElementById("fade").classList.remove("on");
+          fadeEl.classList.remove("on");
         });
       } else {
-        document.getElementById("lockMsg").textContent = "Wrong PIN";
+        lockMsgEl.textContent = "Wrong PIN";
       }
     });
 
-    document.getElementById("pin").addEventListener("keydown",(e)=>{
-      if (e.key === "Enter") document.getElementById("unlock").click();
+    pinEl.addEventListener("keydown",(e)=>{
+      if (e.key === "Enter") unlockBtn.click();
     });
 
-    document.getElementById("chatBtn").addEventListener("click", (e) => {
+    chatBtn.addEventListener("click", (e) => {
       e.preventDefault();
       if (sessionStorage.getItem("unlocked") !== "1") {
         lockNow("Enter PIN first.");
@@ -271,8 +310,8 @@
     function newCall(){
       const room = "notes-" + generateRoom();
       const base = "https://meet.jit.si/" + room;
-      document.getElementById("videoCall").href = base;
-      document.getElementById("audioCall").href = base + "#config.startWithVideoMuted=true";
+      videoCallEl.href = base;
+      audioCallEl.href = base + "#config.startWithVideoMuted=true";
       window.currentCall = base;
     }
     newCall();
@@ -293,17 +332,6 @@
 
     document.getElementById("panicLock").addEventListener("click", () => {
       lockNow("Locked.");
-    });
-
-    // Auto-lock after inactivity
-    let idleTimer = null;
-    function resetIdleTimer(){
-      if (sessionStorage.getItem("unlocked") !== "1") return;
-      clearTimeout(idleTimer);
-      idleTimer = setTimeout(() => lockNow("Locked (inactive)."), AUTO_LOCK_AFTER_MS);
-    }
-    ["mousemove","keydown","touchstart","click","scroll"].forEach(evt => {
-      window.addEventListener(evt, resetIdleTimer, { passive:true });
     });
 
     // On load
