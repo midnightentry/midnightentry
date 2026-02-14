@@ -1,10 +1,12 @@
-const CACHE_NAME = "midnight-entry-v1";
+const CACHE_NAME = "notes-v1";
 const ASSETS = [
   "./",
   "./index.html",
   "./manifest.json",
+  "./sw.js",
   "./icon-192.png",
-  "./icon-512.png"
+  "./icon-512.png",
+  "./og.png"
 ];
 
 self.addEventListener("install", (event) => {
