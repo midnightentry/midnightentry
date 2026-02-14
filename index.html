@@ -6,28 +6,14 @@
   <meta name="theme-color" content="#050814" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-
   <title>Notes</title>
 
-  <!-- Share preview (neutral) -->
-  <meta property="og:title" content="Notes" />
-  <meta property="og:description" content="Personal workspace." />
-  <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://midnightentry.github.io/midnightentry/" />
-  <meta property="og:image" content="https://midnightentry.github.io/midnightentry/og.png" />
-
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Notes" />
-  <meta name="twitter:description" content="Personal workspace." />
-  <meta name="twitter:image" content="https://midnightentry.github.io/midnightentry/og.png" />
-
-  <!-- PWA -->
+  <!-- (Optional) Keep your existing OG tags here if you already added them -->
   <link rel="manifest" href="manifest.json" />
   <link rel="apple-touch-icon" href="icon-192.png" />
 
   <style>
     :root{ color-scheme: dark; }
-
     body{
       margin:0; min-height:100vh; display:grid; place-items:center;
       font-family: system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
@@ -38,7 +24,6 @@
         linear-gradient(180deg, #071022, #050814);
       color: rgba(255,255,255,.95);
     }
-
     .card{
       width:min(560px, 92vw);
       padding:30px 24px;
@@ -48,12 +33,9 @@
       box-shadow:0 25px 60px rgba(0,0,0,.35);
       backdrop-filter: blur(12px);
     }
-
-    h1{ margin:0 0 10px; font-size:28px; letter-spacing:.2px; }
+    h1{ margin:0 0 10px; font-size:28px; }
     p{ margin:0 0 18px; opacity:.9; line-height:1.45; }
-
     .btns{ display:grid; gap:12px; margin-top:14px; }
-
     button, a.btn{
       padding:14px;
       border-radius:14px;
@@ -66,29 +48,8 @@
       text-align:center;
       transition:.18s ease;
       -webkit-tap-highlight-color: transparent;
-      user-select:none;
     }
-
     button:hover, a.btn:hover{ background:rgba(255,255,255,.14); }
-    button:active, a.btn:active{ transform: translateY(1px); }
-
-    .note{
-      margin-top:18px;
-      padding:14px;
-      border-radius:14px;
-      background:rgba(0,0,0,.25);
-      font-size:13px;
-      border:1px solid rgba(255,255,255,.10);
-      line-height:1.45;
-    }
-    .small{ margin-top:12px; font-size:12px; opacity:.78; line-height:1.45; }
-
-    hr{
-      border:0;
-      height:1px;
-      background: rgba(255,255,255,.10);
-      margin: 18px 0;
-    }
 
     /* PIN overlay */
     #lock{
@@ -130,35 +91,15 @@
       cursor:pointer;
     }
     #lockMsg{ margin-top:10px; font-size:13px; opacity:.85; }
-
-    /* Fade overlay */
-    #fade{
-      position:fixed; inset:0;
-      background:#050814;
-      opacity:0;
-      transition:opacity .25s ease;
-      z-index:9998;
-      pointer-events:none;
-    }
-    #fade.on{ opacity:1; }
   </style>
-
-  <link rel="preconnect" href="https://app.element.io">
-  <link rel="preconnect" href="https://meet.jit.si">
 </head>
 
 <body>
-  <div id="fade"></div>
-
-  <!-- PIN LOCK -->
   <div id="lock">
     <div id="lockCard">
       <div style="font-weight:900; font-size:20px; margin-bottom:8px;">🔒 Access PIN</div>
-      <div style="opacity:.85; font-size:14px; margin-bottom:12px; line-height:1.35;">
-        Private entry.
-      </div>
-      <input id="pin" placeholder="••••" inputmode="numeric" autocomplete="one-time-code" />
-      <button id="unlock" type="button">Unlock</button>
+      <input id="pin" placeholder="••••" inputmode="numeric" />
+      <button id="unlock">Unlock</button>
       <div id="lockMsg"></div>
     </div>
   </div>
@@ -168,48 +109,27 @@
     <p>Personal workspace.</p>
 
     <div class="btns">
-      <a class="btn" id="chatBtn" href="#" rel="noopener">Open</a>
+      <a class="btn" id="chatBtn" href="#">Open</a>
 
-      <a class="btn" id="videoCall" href="#" target="_blank" rel="noopener">Video Call</a>
-      <a class="btn" id="audioCall" href="#" target="_blank" rel="noopener">Audio Call</a>
-
+      <button id="videoBtn" type="button">Video Call</button>
+      <button id="audioBtn" type="button">Audio Call</button>
       <button id="copyCall" type="button">Copy Call Link</button>
       <button id="newCall" type="button">New Call Link</button>
-
-      <hr>
-
-      <button id="panicLock" type="button">Lock</button>
-    </div>
-
-    <div class="note">
-      Install like an app:
-      <br>• iPhone: Safari → Share → Add to Home Screen
-      <br>• Android: Chrome → ⋮ → Add to Home screen
-    </div>
-
-    <div class="small">
-      Tip: If a share preview still shows an old title, share with <b>?v=2</b> at the end of the link once.
     </div>
   </main>
 
   <script>
-    // Register PWA service worker
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js").catch(()=>{});
-    }
-
-    /* ===== CONFIG ===== */
-
     // PIN = 1127 (SHA-256)
     const PIN_HASH = "7377a71607a8dabc029ab10e7a6a895b92e87762538b10ce8b10c4c9ddc74448";
-    const FADE_MS = 220;
 
-    // Element private room
-    const ROOM_ID = "!QCDoDUrbQEiLoiTDVl:matrix.org";
-    const ELEMENT_ROOM_URL = "https://app.element.io/#/room/" + ROOM_ID;
+    // ✅ Mobile-friendly Element entry:
+    const MATRIX_LINK = "https://matrix.to/#/!QCDoDUrbQEiLoiTDVl:matrix.org";
 
-    // Auto-lock after inactivity
-    const AUTO_LOCK_AFTER_MS = 2 * 60 * 1000; // 2 minutes
+    // Current Jitsi room
+    let currentJitsiRoom = "";
+
+    function isAndroid(){ return /Android/i.test(navigator.userAgent); }
+    function isIOS(){ return /iPhone|iPad|iPod/i.test(navigator.userAgent); }
 
     async function sha256Hex(text){
       const data = new TextEncoder().encode(text);
@@ -217,98 +137,89 @@
       return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("");
     }
 
-    function fadeThen(action){
-      document.getElementById("fade").classList.add("on");
-      setTimeout(action, FADE_MS);
-    }
-
-    function lockNow(message=""){
-      document.getElementById("lock").style.display = "grid";
-      document.getElementById("lockMsg").textContent = message;
-      sessionStorage.removeItem("unlocked");
-    }
-
-    function unlockNow(){
-      document.getElementById("lock").style.display = "none";
-      document.getElementById("lockMsg").textContent = "";
-      sessionStorage.setItem("unlocked","1");
-      resetIdleTimer();
+    function requireUnlock(){
+      if (sessionStorage.getItem("unlocked") !== "1") {
+        document.getElementById("lock").style.display = "grid";
+        return false;
+      }
+      return true;
     }
 
     document.getElementById("unlock").addEventListener("click", async () => {
       const pin = (document.getElementById("pin").value || "").trim();
       const h = await sha256Hex(pin);
       if (h === PIN_HASH) {
-        fadeThen(() => {
-          unlockNow();
-          document.getElementById("fade").classList.remove("on");
-        });
+        document.getElementById("lock").style.display = "none";
+        sessionStorage.setItem("unlocked","1");
       } else {
         document.getElementById("lockMsg").textContent = "Wrong PIN";
       }
     });
 
-    document.getElementById("pin").addEventListener("keydown",(e)=>{
-      if (e.key === "Enter") document.getElementById("unlock").click();
-    });
+    // Persist unlock for this session
+    if (sessionStorage.getItem("unlocked") === "1") {
+      document.getElementById("lock").style.display = "none";
+    }
 
+    // Open Element via matrix.to (works on mobile)
     document.getElementById("chatBtn").addEventListener("click", (e) => {
       e.preventDefault();
-      if (sessionStorage.getItem("unlocked") !== "1") {
-        lockNow("Enter PIN first.");
-        return;
-      }
-      fadeThen(() => window.location.href = ELEMENT_ROOM_URL);
+      if (!requireUnlock()) return;
+      window.location.href = MATRIX_LINK;
     });
 
-    // Jitsi rotating call link
+    // Jitsi room generator
     function generateRoom(){
       const bytes = new Uint8Array(8);
       crypto.getRandomValues(bytes);
       return Array.from(bytes, b => b.toString(16).padStart(2,"0")).join("");
     }
-
-    function newCall(){
-      const room = "notes-" + generateRoom();
-      const base = "https://meet.jit.si/" + room;
-      document.getElementById("videoCall").href = base;
-      document.getElementById("audioCall").href = base + "#config.startWithVideoMuted=true";
-      window.currentCall = base;
+    function newCallRoom(){
+      currentJitsiRoom = "notes-" + generateRoom();
     }
-    newCall();
+    newCallRoom();
+
+    function jitsiWebUrl(audioOnly=false){
+      const base = "https://meet.jit.si/" + currentJitsiRoom;
+      return audioOnly ? (base + "#config.startWithVideoMuted=true") : base;
+    }
+
+    // Try app deep-link first on Android, then fallback to web
+    function openJitsi(audioOnly=false){
+      if (!requireUnlock()) return;
+
+      const web = jitsiWebUrl(audioOnly);
+
+      if (isAndroid()) {
+        // Try open Jitsi app
+        window.location.href = "jitsi-meet://" + currentJitsiRoom;
+        // Fallback to web quickly
+        setTimeout(() => { window.location.href = web; }, 900);
+        return;
+      }
+
+      // iOS: open web (will prompt app if installed)
+      window.location.href = web;
+    }
+
+    document.getElementById("videoBtn").addEventListener("click", () => openJitsi(false));
+    document.getElementById("audioBtn").addEventListener("click", () => openJitsi(true));
 
     document.getElementById("copyCall").addEventListener("click", async () => {
+      if (!requireUnlock()) return;
       try{
-        await navigator.clipboard.writeText(window.currentCall);
+        await navigator.clipboard.writeText(jitsiWebUrl(false));
         alert("Copied");
       } catch {
-        alert("Copy failed. Link:\n\n" + window.currentCall);
+        alert("Copy failed:\n\n" + jitsiWebUrl(false));
       }
     });
 
     document.getElementById("newCall").addEventListener("click", () => {
-      newCall();
-      alert("New link created");
+      if (!requireUnlock()) return;
+      newCallRoom();
+      alert("New call link created");
     });
-
-    document.getElementById("panicLock").addEventListener("click", () => {
-      lockNow("Locked.");
-    });
-
-    // Auto-lock after inactivity
-    let idleTimer = null;
-    function resetIdleTimer(){
-      if (sessionStorage.getItem("unlocked") !== "1") return;
-      clearTimeout(idleTimer);
-      idleTimer = setTimeout(() => lockNow("Locked (inactive)."), AUTO_LOCK_AFTER_MS);
-    }
-    ["mousemove","keydown","touchstart","click","scroll"].forEach(evt => {
-      window.addEventListener(evt, resetIdleTimer, { passive:true });
-    });
-
-    // On load
-    if (sessionStorage.getItem("unlocked") === "1") unlockNow();
-    else lockNow();
   </script>
 </body>
 </html>
