@@ -238,6 +238,7 @@
     const IDLE_EVENTS = ["mousemove","keydown","touchstart","click","scroll"];
 
     function resetIdleTimer(){
+      if (sessionStorage.getItem("unlocked") !== "1") return;
       clearTimeout(idleTimer);
       idleTimer = setTimeout(() => lockNow("Locked (inactive)."), AUTO_LOCK_AFTER_MS);
     }
@@ -255,7 +256,7 @@
 
     function removeIdleListeners(){
       IDLE_EVENTS.forEach(evt => {
-        window.removeEventListener(evt, debouncedResetIdleTimer);
+        window.removeEventListener(evt, debouncedResetIdleTimer, { passive:true });
       });
     }
 
@@ -264,6 +265,8 @@
       lockMsgEl.textContent = message;
       sessionStorage.removeItem("unlocked");
       removeIdleListeners();
+      clearTimeout(idleTimer);
+      clearTimeout(debounceTimer);
     }
 
     function unlockNow(){
