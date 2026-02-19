@@ -21,7 +21,8 @@
       padding:14px 16px 12px;
       display:flex; align-items:center; justify-content:space-between;
     }
-    .title{ font-weight:900; font-size:20px; user-select:none; }
+    .title{ font-weight:900; font-size:20px; user-select:none; position:relative; }
+    .titleHint{ font-size:12px; color:rgba(0,0,0,.45); margin-left:10px; }
     .pill{
       border:1px solid rgba(0,0,0,.12); background:#fff;
       padding:8px 10px; border-radius:12px;
@@ -35,16 +36,19 @@
     }
     .search input{ border:0; outline:0; width:100%; font-size:15px; background:transparent; }
     .list{ margin-top:14px; display:flex; flex-direction:column; gap:10px; }
+
     .noteCard{
       background:#fff; border:1px solid rgba(0,0,0,.08);
       border-radius:16px; padding:14px; cursor:pointer;
       box-shadow:0 10px 24px rgba(0,0,0,.04);
       transition:transform .15s ease;
+      -webkit-tap-highlight-color: transparent;
     }
     .noteCard:active{ transform:scale(.99); }
     .noteTitle{ font-weight:900; font-size:15px; margin-bottom:6px; }
     .noteMeta{ font-size:12px; color:rgba(0,0,0,.55); }
     .notePreview{ margin-top:8px; font-size:13px; color:rgba(0,0,0,.72); line-height:1.35; }
+
     .fab{
       position:fixed; right:16px; bottom:18px; z-index:20;
       width:54px; height:54px; border-radius:18px;
@@ -55,8 +59,9 @@
     }
 
     /* Editor */
-    #editor{ position:fixed; inset:0; background:#f2f2f7; display:none; flex-direction:column; z-index:30; }
-    #editorHead{ display:flex; align-items:center; justify-content:space-between; padding:14px 16px 12px;
+    #editor{ position:fixed; inset:0; background:#f2f2f7; display:none; flex-direction:column; z-index:30; animation:fadeIn .16s ease; }
+    #editorHead{
+      display:flex; align-items:center; justify-content:space-between; padding:14px 16px 12px;
       background:rgba(242,242,247,.92); backdrop-filter:blur(12px);
       border-bottom:1px solid rgba(0,0,0,.08);
     }
@@ -64,9 +69,9 @@
     #editorArea{ flex:1; padding:16px; }
     #editorArea textarea{ width:100%; height:100%; border:0; outline:0; resize:none; background:transparent; font-size:16px; line-height:1.45; }
 
-    /* Sheet */
+    /* Session sheet */
     #sheet{
-      position:fixed; left:0; right:0; bottom:-560px; z-index:40;
+      position:fixed; left:0; right:0; bottom:-620px; z-index:40;
       background:#fff; border:1px solid rgba(0,0,0,.10);
       border-top-left-radius:18px; border-top-right-radius:18px;
       box-shadow:0 -20px 60px rgba(0,0,0,.18);
@@ -87,21 +92,76 @@
       border:1px solid rgba(0,0,0,.10); background:#f7f7fb;
       word-break:break-all; font-size:13px; display:none;
     }
+    .row2{ display:flex; gap:10px; margin-top:10px; }
+    .row2 .btn{ margin-top:0; }
 
-    /* PIN */
+    /* PIN modal */
     #pinModal{ position:fixed; inset:0; background:rgba(0,0,0,.35); display:none; place-items:center; z-index:80; }
-    #pinCard{ width:min(420px,92vw); background:#fff; border-radius:18px; padding:18px; border:1px solid rgba(0,0,0,.10); box-shadow:0 30px 70px rgba(0,0,0,.25); }
+    #pinCard{ width:min(420px,92vw); background:#fff; border-radius:18px; padding:18px; border:1px solid rgba(0,0,0,.10); box-shadow:0 30px 70px rgba(0,0,0,.25); animation:fadeIn .16s ease; }
     #pinCard .t{ font-weight:900; font-size:16px; margin-bottom:10px; }
     #pinInput{
       width:100%; padding:14px; border-radius:14px; border:1px solid rgba(0,0,0,.12);
       background:#f7f7fb; font-size:18px; letter-spacing:6px; text-align:center; outline:0;
+    }
+
+    /* Actions sheet (note long-press) */
+    #actions{
+      position:fixed; left:0; right:0; bottom:-420px; z-index:70;
+      background:#fff; border:1px solid rgba(0,0,0,.10);
+      border-top-left-radius:18px; border-top-right-radius:18px;
+      box-shadow:0 -20px 60px rgba(0,0,0,.18);
+      padding:14px; transition:bottom .22s ease;
+    }
+    #actions.open{ bottom:0; }
+    .danger{ background:#ff3b30; border-color:rgba(0,0,0,.0); }
+
+    /* Undo toast */
+    #toast{
+      position:fixed; left:12px; right:12px; bottom:-120px; z-index:90;
+      background:rgba(17,17,17,.92); color:#fff;
+      border-radius:16px; padding:12px 12px;
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      transition:bottom .22s ease;
+      box-shadow:0 18px 40px rgba(0,0,0,.25);
+      backdrop-filter: blur(10px);
+    }
+    #toast.show{ bottom:16px; }
+    #toastText{ font-size:13px; opacity:.95; }
+    #undoBtn{
+      border:1px solid rgba(255,255,255,.25);
+      background:rgba(255,255,255,.12);
+      color:#fff;
+      padding:8px 10px;
+      border-radius:12px;
+      font-weight:900;
+      cursor:pointer;
+      white-space:nowrap;
+    }
+
+    @keyframes fadeIn{
+      from{ opacity:0; transform: translateY(6px); }
+      to{ opacity:1; transform: translateY(0); }
+    }
+
+    /* Subtle press ring when holding title */
+    .pressing::after{
+      content:"";
+      position:absolute;
+      left:-10px; right:-10px; top:-6px; bottom:-6px;
+      border-radius:14px;
+      background: rgba(0,0,0,.06);
+      animation: fadeIn .12s ease;
+      pointer-events:none;
     }
   </style>
 </head>
 
 <body>
   <header>
-    <div class="title" id="titleTap">Notes</div>
+    <div style="display:flex; align-items:baseline;">
+      <div class="title" id="titleTap">Notes</div>
+      <div class="titleHint" id="statusHint"></div>
+    </div>
     <div style="display:flex; gap:10px;">
       <button class="pill" id="lockBtn">Lock</button>
       <button class="pill" id="burnBtn">Burn</button>
@@ -118,6 +178,7 @@
 
   <button class="fab" id="newNote">+</button>
 
+  <!-- Editor -->
   <section id="editor">
     <div id="editorHead">
       <button class="pill" id="backBtn">Back</button>
@@ -129,6 +190,7 @@
     </div>
   </section>
 
+  <!-- Session Sheet -->
   <section id="sheet" aria-hidden="true">
     <div class="sheetTop">
       <div class="sheetTitle">Session</div>
@@ -136,12 +198,17 @@
     </div>
 
     <button class="btn" id="newSession">New Session</button>
-    <button class="btn secondary" id="openLast" style="display:none;">Open Last</button>
-    <button class="btn secondary" id="copyLast" style="display:none;">Copy Link</button>
 
-    <div id="linkBox" class="linkBox"></div>
+    <div class="linkBox" id="linkBox"></div>
+
+    <div class="row2">
+      <button class="btn secondary" id="shareBtn" style="display:none;">Share</button>
+      <button class="btn secondary" id="copyBtn" style="display:none;">Copy</button>
+      <button class="btn secondary" id="openBtn" style="display:none;">Open</button>
+    </div>
   </section>
 
+  <!-- PIN Modal -->
   <div id="pinModal">
     <div id="pinCard">
       <div class="t">Enter PIN</div>
@@ -150,11 +217,31 @@
     </div>
   </div>
 
+  <!-- Note actions -->
+  <section id="actions" aria-hidden="true">
+    <div class="sheetTop">
+      <div class="sheetTitle" id="actTitle">Note</div>
+      <button class="pill" id="actClose">Close</button>
+    </div>
+    <button class="btn secondary" id="actOpen">Open</button>
+    <button class="btn danger" id="actDelete">Delete</button>
+  </section>
+
+  <!-- Undo toast -->
+  <div id="toast">
+    <div id="toastText">Deleted.</div>
+    <button id="undoBtn">Undo</button>
+  </div>
+
 <script>
+  // Register SW (safe to fail)
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(()=>{});
 
+  // PIN = 1127 (SHA-256)
   const PIN_HASH = "7377a71607a8dabc029ab10e7a6a895b92e87762538b10ce8b10c4c9ddc74448";
-  const IDLE_LOCK_MS = 60 * 1000;
+
+  // Auto-lock settings
+  const IDLE_LOCK_MS = 90 * 1000; // 90 seconds
 
   const $ = (id) => document.getElementById(id);
 
@@ -169,9 +256,21 @@
     unlocked: sessionStorage.getItem("unlocked") === "1",
     editingId: null,
     idleTimer: null,
-    taps: 0,
-    tapTimer: null
+    titleHoldTimer: null,
+    lastLockTap: 0,
+
+    // long-press note actions
+    pressTimer: null,
+    pressedNoteId: null,
+
+    // undo
+    lastDeleted: null,
+    undoTimer: null
   };
+
+  function setHint(text=""){
+    $("statusHint").textContent = text;
+  }
 
   async function sha256Hex(text){
     const data = new TextEncoder().encode(text);
@@ -179,13 +278,16 @@
     return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("");
   }
 
+  function haptic(){
+    try { navigator.vibrate && navigator.vibrate(15); } catch {}
+  }
+
   function seedNotesIfEmpty(){
     if (storage.notes) return;
     storage.notes = [
-      { id: crypto.randomUUID(), title: "Grocery List", body: "Milk\\nEggs\\nBread\\nTea\\nBananas", ts: Date.now()-86400000 },
-      { id: crypto.randomUUID(), title: "Work Tasks", body: "Email\\nSchedule\\nFollow-ups\\nBudget notes", ts: Date.now()-172800000 },
-      { id: crypto.randomUUID(), title: "Ideas", body: "Website tweaks\\nIcon ideas\\nWeekend plan", ts: Date.now()-3600000 },
-      { id: crypto.randomUUID(), title: "Templates", body: "—", ts: Date.now() }
+      { id: crypto.randomUUID(), title: "Grocery List", body: "Milk\nEggs\nBread\nTea\nBananas", ts: Date.now()-86400000 },
+      { id: crypto.randomUUID(), title: "Work Tasks", body: "Email\nSchedule\nFollow-ups\nBudget notes", ts: Date.now()-172800000 },
+      { id: crypto.randomUUID(), title: "Ideas", body: "Website tweaks\nIcon ideas\nWeekend plan", ts: Date.now()-3600000 }
     ];
   }
 
@@ -193,10 +295,12 @@
     const d = new Date(ts);
     return d.toLocaleDateString(undefined, { month:"short", day:"numeric" });
   }
+
   function previewText(body){
-    const t = (body || "").trim().replace(/\\n+/g, " ");
-    return t.length > 60 ? t.slice(0,60) + "…" : t;
+    const t = (body || "").trim().replace(/\n+/g, " ");
+    return t.length > 70 ? t.slice(0,70) + "…" : t;
   }
+
   function escapeHtml(s){
     return String(s).replace(/[&<>"']/g, (c)=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
   }
@@ -206,6 +310,7 @@
     const notes = (storage.notes || []).slice().sort((a,b)=>b.ts-a.ts);
 
     $("list").innerHTML = "";
+
     for (const n of notes) {
       const t = (n.title || "").toLowerCase();
       const p = (n.body || "").toLowerCase();
@@ -214,11 +319,13 @@
       const card = document.createElement("div");
       card.className = "noteCard";
       card.dataset.id = n.id;
+
       card.innerHTML = `
         <div class="noteTitle">${escapeHtml(n.title || "Note")}</div>
         <div class="noteMeta">${formatMeta(n.ts)}</div>
         <div class="notePreview">${escapeHtml(previewText(n.body))}</div>
       `;
+
       $("list").appendChild(card);
     }
   }
@@ -228,14 +335,20 @@
     $("editorTitle").textContent = note.title || "Note";
     $("editorText").value = note.body || "";
     $("editor").style.display = "flex";
+    setHint("Editing");
   }
-  function closeEditor(){ $("editor").style.display = "none"; state.editingId = null; }
+
+  function closeEditor(){
+    $("editor").style.display = "none";
+    state.editingId = null;
+    setHint("");
+  }
 
   function openSheet(){
     $("sheet").classList.add("open");
     $("sheet").setAttribute("aria-hidden","false");
-    refreshLast();
   }
+
   function closeSheet(){
     $("sheet").classList.remove("open");
     $("sheet").setAttribute("aria-hidden","true");
@@ -244,103 +357,236 @@
   function showPin(){
     $("pinInput").value = "";
     $("pinModal").style.display = "grid";
-    setTimeout(()=> $("pinInput").focus(), 20);
+    setTimeout(()=> $("pinInput").focus(), 30);
   }
-  function hidePin(){ $("pinModal").style.display = "none"; }
+
+  function hidePin(){
+    $("pinModal").style.display = "none";
+  }
 
   function lockApp(){
     state.unlocked = false;
     sessionStorage.removeItem("unlocked");
-    closeSheet(); closeEditor();
+    closeSheet();
+    closeEditor();
+    closeActions();
+    setHint("");
   }
+
   function burnApp(){
+    // keep decoy notes, but clear session traces + last session link
     sessionStorage.removeItem("unlocked");
     localStorage.removeItem("lastSessionLink");
     state.unlocked = false;
-    closeSheet(); closeEditor();
+    closeSheet();
+    closeEditor();
+    closeActions();
+    hideToast();
+    setHint("");
   }
 
   function resetIdle(){
     clearTimeout(state.idleTimer);
-    state.idleTimer = setTimeout(lockApp, IDLE_LOCK_MS);
+    state.idleTimer = setTimeout(() => {
+      lockApp();
+    }, IDLE_LOCK_MS);
   }
+
   ["touchstart","mousemove","keydown","click","scroll"].forEach(evt =>
     window.addEventListener(evt, resetIdle, { passive:true })
   );
 
+  document.addEventListener("visibilitychange", () => {
+    // lock immediately when user switches apps/tabs
+    if (document.visibilityState !== "visible") lockApp();
+  });
+
   async function ensureUnlocked(){
     if (state.unlocked) return true;
+
     showPin();
     return new Promise((resolve) => {
       const attempt = async () => {
         const pin = ($("pinInput").value || "").trim();
         const h = await sha256Hex(pin);
         hidePin();
+
         if (h === PIN_HASH) {
           state.unlocked = true;
           sessionStorage.setItem("unlocked","1");
+          haptic();
           resetIdle();
           resolve(true);
         } else {
-          // decoy behavior
+          // Decoy behavior: open a harmless note
           const notes = storage.notes || [];
           const decoy = notes.find(n => (n.title || "").toLowerCase().includes("work")) || notes[0];
           if (decoy) openEditor(decoy);
           resolve(false);
         }
       };
+
       $("pinGo").onclick = attempt;
       $("pinInput").onkeydown = (e) => { if (e.key === "Enter") attempt(); };
       $("pinModal").onclick = (e) => { if (e.target === $("pinModal")) { hidePin(); resolve(false); } };
     });
   }
 
-  function b64url(bytes){
-    let s = btoa(String.fromCharCode(...bytes));
-    return s.replace(/\\+/g,'-').replace(/\\//g,'_').replace(/=+$/,'');
-  }
-  function randId(len=14){
-    const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-";
-    const arr = new Uint8Array(len);
-    crypto.getRandomValues(arr);
-    return Array.from(arr, x => chars[x % chars.length]).join('');
-  }
-
-  function refreshLast(){
-    const last = storage.lastLink;
-    const has = !!last;
-    $("openLast").style.display = has ? "block" : "none";
-    $("copyLast").style.display = has ? "block" : "none";
-    $("linkBox").style.display = has ? "block" : "none";
-    if (has) $("linkBox").textContent = last;
-  }
-
-  $("titleTap").addEventListener("click", async () => {
-    state.taps += 1;
-    clearTimeout(state.tapTimer);
-    state.tapTimer = setTimeout(()=> state.taps = 0, 650);
-    if (state.taps >= 3) {
-      state.taps = 0;
+  // Better unlock: long-press "Notes" title
+  function startTitleHold(){
+    clearTimeout(state.titleHoldTimer);
+    $("titleTap").classList.add("pressing");
+    state.titleHoldTimer = setTimeout(async () => {
+      $("titleTap").classList.remove("pressing");
       const ok = await ensureUnlocked();
       if (ok) openSheet();
-    }
-  });
+    }, 700);
+  }
+  function endTitleHold(){
+    clearTimeout(state.titleHoldTimer);
+    $("titleTap").classList.remove("pressing");
+  }
 
-  $("list").addEventListener("click", async (e) => {
+  $("titleTap").addEventListener("touchstart", startTitleHold, { passive:true });
+  $("titleTap").addEventListener("touchend", endTitleHold);
+  $("titleTap").addEventListener("touchcancel", endTitleHold);
+  $("titleTap").addEventListener("mousedown", startTitleHold);
+  $("titleTap").addEventListener("mouseup", endTitleHold);
+  $("titleTap").addEventListener("mouseleave", endTitleHold);
+
+  // Note actions (long press)
+  let actionTargetId = null;
+
+  function openActions(noteId){
+    actionTargetId = noteId;
+    const note = (storage.notes || []).find(n => n.id === noteId);
+    $("actTitle").textContent = note?.title || "Note";
+    $("actions").classList.add("open");
+    $("actions").setAttribute("aria-hidden","false");
+    haptic();
+  }
+
+  function closeActions(){
+    actionTargetId = null;
+    $("actions").classList.remove("open");
+    $("actions").setAttribute("aria-hidden","true");
+  }
+
+  function startNotePress(noteId){
+    clearTimeout(state.pressTimer);
+    state.pressedNoteId = noteId;
+    state.pressTimer = setTimeout(() => {
+      if (state.pressedNoteId === noteId) openActions(noteId);
+    }, 520);
+  }
+  function endNotePress(){
+    clearTimeout(state.pressTimer);
+    state.pressedNoteId = null;
+  }
+
+  // Click opens editor (unless actions triggered)
+  $("list").addEventListener("click", (e) => {
     const card = e.target.closest(".noteCard");
     if (!card) return;
+
+    // if actions sheet open, ignore clicks
+    if ($("actions").classList.contains("open")) return;
+
     const id = card.dataset.id;
     const note = (storage.notes || []).find(n => n.id === id);
     if (!note) return;
-
-    if ((note.title || "").toLowerCase() === "templates") {
-      const ok = await ensureUnlocked();
-      if (ok) openSheet();
-      return;
-    }
     openEditor(note);
   });
 
+  // Long-press handlers
+  $("list").addEventListener("touchstart", (e) => {
+    const card = e.target.closest(".noteCard");
+    if (!card) return;
+    startNotePress(card.dataset.id);
+  }, { passive:true });
+
+  $("list").addEventListener("touchend", endNotePress);
+  $("list").addEventListener("touchcancel", endNotePress);
+
+  $("list").addEventListener("mousedown", (e) => {
+    const card = e.target.closest(".noteCard");
+    if (!card) return;
+    startNotePress(card.dataset.id);
+  });
+  $("list").addEventListener("mouseup", endNotePress);
+  $("list").addEventListener("mouseleave", endNotePress);
+
+  // Actions buttons
+  $("actClose").onclick = closeActions;
+
+  $("actOpen").onclick = () => {
+    const note = (storage.notes || []).find(n => n.id === actionTargetId);
+    closeActions();
+    if (note) openEditor(note);
+  };
+
+  function showToast(msg){
+    $("toastText").textContent = msg;
+    $("toast").classList.add("show");
+  }
+  function hideToast(){
+    $("toast").classList.remove("show");
+    if (state.undoTimer) clearTimeout(state.undoTimer);
+    state.undoTimer = null;
+  }
+
+  $("actDelete").onclick = () => {
+    const notes = storage.notes || [];
+    const idx = notes.findIndex(n => n.id === actionTargetId);
+    if (idx < 0) { closeActions(); return; }
+
+    // store deleted for undo
+    state.lastDeleted = { note: notes[idx], index: idx };
+    notes.splice(idx, 1);
+    storage.notes = notes;
+
+    closeActions();
+    renderList();
+
+    showToast("Note deleted");
+    if (state.undoTimer) clearTimeout(state.undoTimer);
+    state.undoTimer = setTimeout(() => {
+      state.lastDeleted = null;
+      hideToast();
+    }, 5200);
+  };
+
+  $("undoBtn").onclick = () => {
+    if (!state.lastDeleted) { hideToast(); return; }
+    const notes = storage.notes || [];
+    const { note, index } = state.lastDeleted;
+    const safeIndex = Math.max(0, Math.min(index, notes.length));
+    notes.splice(safeIndex, 0, note);
+    storage.notes = notes;
+    state.lastDeleted = null;
+    hideToast();
+    renderList();
+    haptic();
+  };
+
+  // Editor buttons
+  $("backBtn").onclick = () => { closeEditor(); renderList(); };
+
+  $("saveBtn").onclick = () => {
+    const notes = storage.notes || [];
+    const idx = notes.findIndex(n => n.id === state.editingId);
+    if (idx >= 0) {
+      const body = $("editorText").value || "";
+      const title = (body.trim().split("\n")[0] || "Note").slice(0, 40) || "Note";
+      notes[idx] = { ...notes[idx], title, body, ts: Date.now() };
+      storage.notes = notes;
+    }
+    closeEditor();
+    renderList();
+    haptic();
+  };
+
+  // New note
   $("newNote").addEventListener("click", () => {
     const notes = storage.notes || [];
     const n = { id: crypto.randomUUID(), title: "New Note", body: "", ts: Date.now() };
@@ -350,23 +596,26 @@
     openEditor(n);
   });
 
-  $("backBtn").onclick = () => { closeEditor(); renderList(); };
-  $("saveBtn").onclick = () => {
-    const notes = storage.notes || [];
-    const idx = notes.findIndex(n => n.id === state.editingId);
-    if (idx >= 0) {
-      const body = $("editorText").value || "";
-      const title = (body.trim().split("\\n")[0] || "Note").slice(0, 40) || "Note";
-      notes[idx] = { ...notes[idx], title, body, ts: Date.now() };
-      storage.notes = notes;
-    }
-    closeEditor();
-    renderList();
-  };
+  // Session link generation
+  function b64url(bytes){
+    let s = btoa(String.fromCharCode(...bytes));
+    return s.replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  }
 
-  $("closeSheet").onclick = closeSheet;
-  $("lockBtn").onclick = lockApp;
-  $("burnBtn").onclick = burnApp;
+  function randId(len=14){
+    const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-";
+    const arr = new Uint8Array(len);
+    crypto.getRandomValues(arr);
+    return Array.from(arr, x => chars[x % chars.length]).join('');
+  }
+
+  function revealLink(url){
+    $("linkBox").style.display = "block";
+    $("linkBox").textContent = url;
+    $("shareBtn").style.display = "block";
+    $("copyBtn").style.display = "block";
+    $("openBtn").style.display = "block";
+  }
 
   $("newSession").addEventListener("click", async () => {
     const ok = await ensureUnlocked();
@@ -379,24 +628,77 @@
 
     const url = `${location.origin}/chat/${roomId}#k=${key}`;
     storage.lastLink = url;
-    refreshLast();
+
+    revealLink(url);
+    haptic();
+
+    // Attempt share right away (works on most phones)
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: "Notes", text: "Open this.", url });
+        return;
+      } catch {}
+    }
+
+    // Clipboard fallback
     try { await navigator.clipboard.writeText(url); } catch {}
   });
 
-  $("openLast").addEventListener("click", async () => {
+  $("shareBtn").addEventListener("click", async () => {
     const ok = await ensureUnlocked();
     if (!ok) return;
-    if (storage.lastLink) window.location.href = storage.lastLink;
+    const url = storage.lastLink;
+    if (!url) return;
+
+    if (navigator.share) {
+      try { await navigator.share({ title: "Notes", text: "Open this.", url }); return; } catch {}
+    }
+    try { await navigator.clipboard.writeText(url); } catch {}
   });
 
-  $("copyLast").addEventListener("click", async () => {
+  $("copyBtn").addEventListener("click", async () => {
     const ok = await ensureUnlocked();
     if (!ok) return;
-    try { await navigator.clipboard.writeText(storage.lastLink); } catch {}
+    const url = storage.lastLink;
+    if (!url) return;
+    try { await navigator.clipboard.writeText(url); haptic(); } catch {}
   });
 
+  $("openBtn").addEventListener("click", async () => {
+    const ok = await ensureUnlocked();
+    if (!ok) return;
+    const url = storage.lastLink;
+    if (!url) return;
+    window.location.href = url;
+  });
+
+  // Close sheet
+  $("closeSheet").onclick = closeSheet;
+
+  // Lock + Burn buttons (+ panic gesture)
+  $("lockBtn").addEventListener("click", () => {
+    const t = Date.now();
+    // double-tap lock => panic burn
+    if (t - state.lastLockTap < 420) {
+      burnApp();
+      lockApp();
+      haptic();
+      state.lastLockTap = 0;
+      return;
+    }
+    state.lastLockTap = t;
+    lockApp();
+  });
+
+  $("burnBtn").addEventListener("click", () => {
+    burnApp();
+    haptic();
+  });
+
+  // Search
   $("q").addEventListener("input", renderList);
 
+  // Init
   seedNotesIfEmpty();
   renderList();
   resetIdle();
