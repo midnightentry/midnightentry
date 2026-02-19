@@ -3,312 +3,403 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#050814" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-
   <title>Notes</title>
 
-  <!-- Share preview (neutral) -->
-  <meta property="og:title" content="Notes" />
-  <meta property="og:description" content="Personal workspace." />
-  <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://midnightentry.github.io/midnightentry/" />
-  <meta property="og:image" content="https://midnightentry.github.io/midnightentry/og.png" />
-
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Notes" />
-  <meta name="twitter:description" content="Personal workspace." />
-  <meta name="twitter:image" content="https://midnightentry.github.io/midnightentry/og.png" />
-
-  <!-- PWA -->
-  <link rel="manifest" href="manifest.json" />
-  <link rel="apple-touch-icon" href="icon-192.png" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#f2f2f7" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <link rel="apple-touch-icon" href="/icon-192.png" />
 
   <style>
-    :root{ color-scheme: dark; }
-
-    body{
-      margin:0; min-height:100vh; display:grid; place-items:center;
-      font-family: system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
-      background:
-        radial-gradient(900px 500px at 20% 20%, rgba(90,160,255,.35), transparent 60%),
-        radial-gradient(900px 500px at 80% 30%, rgba(46,93,255,.25), transparent 55%),
-        radial-gradient(900px 600px at 50% 90%, rgba(0,255,240,.12), transparent 60%),
-        linear-gradient(180deg, #071022, #050814);
-      color: rgba(255,255,255,.95);
+    :root { color-scheme: light; }
+    body{ margin:0; font-family:-apple-system,system-ui,Segoe UI,Roboto,sans-serif; background:#f2f2f7; color:#111; }
+    header{
+      position:sticky; top:0; z-index:10;
+      background:rgba(242,242,247,.92); backdrop-filter:blur(12px);
+      border-bottom:1px solid rgba(0,0,0,.08);
+      padding:14px 16px 12px;
+      display:flex; align-items:center; justify-content:space-between;
+    }
+    .title{ font-weight:900; font-size:20px; user-select:none; }
+    .pill{
+      border:1px solid rgba(0,0,0,.12); background:#fff;
+      padding:8px 10px; border-radius:12px;
+      font-weight:800; font-size:13px; cursor:pointer;
+    }
+    .wrap{ max-width:760px; margin:0 auto; padding:16px; }
+    .search{
+      background:#fff; border:1px solid rgba(0,0,0,.10);
+      border-radius:14px; padding:12px; display:flex; gap:10px; align-items:center;
+      box-shadow:0 6px 18px rgba(0,0,0,.04);
+    }
+    .search input{ border:0; outline:0; width:100%; font-size:15px; background:transparent; }
+    .list{ margin-top:14px; display:flex; flex-direction:column; gap:10px; }
+    .noteCard{
+      background:#fff; border:1px solid rgba(0,0,0,.08);
+      border-radius:16px; padding:14px; cursor:pointer;
+      box-shadow:0 10px 24px rgba(0,0,0,.04);
+      transition:transform .15s ease;
+    }
+    .noteCard:active{ transform:scale(.99); }
+    .noteTitle{ font-weight:900; font-size:15px; margin-bottom:6px; }
+    .noteMeta{ font-size:12px; color:rgba(0,0,0,.55); }
+    .notePreview{ margin-top:8px; font-size:13px; color:rgba(0,0,0,.72); line-height:1.35; }
+    .fab{
+      position:fixed; right:16px; bottom:18px; z-index:20;
+      width:54px; height:54px; border-radius:18px;
+      border:1px solid rgba(0,0,0,.12);
+      background:#111; color:#fff; font-weight:900;
+      display:grid; place-items:center; cursor:pointer;
+      box-shadow:0 18px 40px rgba(0,0,0,.22);
     }
 
-    .card{
-      width:min(560px, 92vw);
-      padding:30px 24px;
-      border-radius:22px;
-      background:rgba(255,255,255,.06);
-      border:1px solid rgba(255,255,255,.12);
-      box-shadow:0 25px 60px rgba(0,0,0,.35);
-      backdrop-filter: blur(12px);
+    /* Editor */
+    #editor{ position:fixed; inset:0; background:#f2f2f7; display:none; flex-direction:column; z-index:30; }
+    #editorHead{ display:flex; align-items:center; justify-content:space-between; padding:14px 16px 12px;
+      background:rgba(242,242,247,.92); backdrop-filter:blur(12px);
+      border-bottom:1px solid rgba(0,0,0,.08);
     }
+    #editorTitle{ font-weight:900; }
+    #editorArea{ flex:1; padding:16px; }
+    #editorArea textarea{ width:100%; height:100%; border:0; outline:0; resize:none; background:transparent; font-size:16px; line-height:1.45; }
 
-    h1{ margin:0 0 10px; font-size:28px; letter-spacing:.2px; }
-    p{ margin:0 0 18px; opacity:.9; line-height:1.45; }
-
-    .btns{ display:grid; gap:12px; margin-top:14px; }
-
-    button, a.btn{
-      padding:14px;
-      border-radius:14px;
-      border:1px solid rgba(255,255,255,.18);
-      background:rgba(255,255,255,.08);
-      color:white;
-      font-weight:900;
-      cursor:pointer;
-      text-decoration:none;
-      text-align:center;
-      transition:.18s ease;
-      -webkit-tap-highlight-color: transparent;
-      user-select:none;
+    /* Sheet */
+    #sheet{
+      position:fixed; left:0; right:0; bottom:-560px; z-index:40;
+      background:#fff; border:1px solid rgba(0,0,0,.10);
+      border-top-left-radius:18px; border-top-right-radius:18px;
+      box-shadow:0 -20px 60px rgba(0,0,0,.18);
+      padding:14px; transition:bottom .22s ease;
     }
-
-    button:hover, a.btn:hover{ background:rgba(255,255,255,.14); }
-    button:active, a.btn:active{ transform: translateY(1px); }
-
-    .note{
-      margin-top:18px;
-      padding:14px;
-      border-radius:14px;
-      background:rgba(0,0,0,.25);
-      font-size:13px;
-      border:1px solid rgba(255,255,255,.10);
-      line-height:1.45;
-    }
-    .small{ margin-top:12px; font-size:12px; opacity:.78; line-height:1.45; }
-
-    hr{
-      border:0;
-      height:1px;
-      background: rgba(255,255,255,.10);
-      margin: 18px 0;
-    }
-
-    /* PIN overlay */
-    #lock{
-      position:fixed; inset:0;
-      display:grid; place-items:center;
-      background: rgba(5,8,20,.95);
-      z-index:9999;
-      padding: 22px;
-    }
-    #lockCard{
-      width:min(420px, 92vw);
-      background:rgba(255,255,255,.06);
-      border-radius:18px;
-      padding:22px;
-      border:1px solid rgba(255,255,255,.12);
-      box-shadow:0 24px 60px rgba(0,0,0,.45);
-    }
-    #pin{
+    #sheet.open{ bottom:0; }
+    .sheetTop{ display:flex; align-items:center; justify-content:space-between; padding-bottom:8px; border-bottom:1px solid rgba(0,0,0,.08); margin-bottom:12px; }
+    .sheetTitle{ font-weight:900; }
+    .btn{
       width:100%;
-      padding:14px;
-      border-radius:12px;
-      border:1px solid rgba(255,255,255,.18);
-      background:rgba(255,255,255,.08);
-      color:white;
-      text-align:center;
-      font-size:18px;
-      letter-spacing:6px;
-      outline:none;
+      border:1px solid rgba(0,0,0,.12);
+      background:#111; color:#fff;
+      padding:12px; border-radius:14px; font-weight:900; cursor:pointer; margin-top:10px;
     }
-    #unlock{
-      margin-top:12px;
-      width:100%;
-      padding:14px;
-      border-radius:12px;
-      border:1px solid rgba(255,255,255,.18);
-      background:rgba(255,255,255,.10);
-      color:white;
-      font-weight:900;
-      cursor:pointer;
+    .btn.secondary{ background:#fff; color:#111; }
+    .linkBox{
+      margin-top:12px; padding:12px; border-radius:14px;
+      border:1px solid rgba(0,0,0,.10); background:#f7f7fb;
+      word-break:break-all; font-size:13px; display:none;
     }
-    #lockMsg{ margin-top:10px; font-size:13px; opacity:.85; }
 
-    /* Fade overlay */
-    #fade{
-      position:fixed; inset:0;
-      background:#050814;
-      opacity:0;
-      transition:opacity .25s ease;
-      z-index:9998;
-      pointer-events:none;
+    /* PIN */
+    #pinModal{ position:fixed; inset:0; background:rgba(0,0,0,.35); display:none; place-items:center; z-index:80; }
+    #pinCard{ width:min(420px,92vw); background:#fff; border-radius:18px; padding:18px; border:1px solid rgba(0,0,0,.10); box-shadow:0 30px 70px rgba(0,0,0,.25); }
+    #pinCard .t{ font-weight:900; font-size:16px; margin-bottom:10px; }
+    #pinInput{
+      width:100%; padding:14px; border-radius:14px; border:1px solid rgba(0,0,0,.12);
+      background:#f7f7fb; font-size:18px; letter-spacing:6px; text-align:center; outline:0;
     }
-    #fade.on{ opacity:1; }
   </style>
-
-  <link rel="preconnect" href="https://app.element.io">
-  <link rel="preconnect" href="https://meet.jit.si">
 </head>
 
 <body>
-  <div id="fade"></div>
+  <header>
+    <div class="title" id="titleTap">Notes</div>
+    <div style="display:flex; gap:10px;">
+      <button class="pill" id="lockBtn">Lock</button>
+      <button class="pill" id="burnBtn">Burn</button>
+    </div>
+  </header>
 
-  <!-- PIN LOCK -->
-  <div id="lock">
-    <div id="lockCard">
-      <div style="font-weight:900; font-size:20px; margin-bottom:8px;">🔒 Access PIN</div>
-      <div style="opacity:.85; font-size:14px; margin-bottom:12px; line-height:1.35;">
-        Private entry.
-      </div>
-      <input id="pin" placeholder="••••" inputmode="numeric" autocomplete="one-time-code" />
-      <button id="unlock" type="button">Unlock</button>
-      <div id="lockMsg"></div>
+  <div class="wrap">
+    <div class="search">
+      <span style="opacity:.55">🔎</span>
+      <input id="q" placeholder="Search" />
+    </div>
+    <div class="list" id="list"></div>
+  </div>
+
+  <button class="fab" id="newNote">+</button>
+
+  <section id="editor">
+    <div id="editorHead">
+      <button class="pill" id="backBtn">Back</button>
+      <div id="editorTitle">Note</div>
+      <button class="pill" id="saveBtn">Save</button>
+    </div>
+    <div id="editorArea">
+      <textarea id="editorText" placeholder="Start typing…"></textarea>
+    </div>
+  </section>
+
+  <section id="sheet" aria-hidden="true">
+    <div class="sheetTop">
+      <div class="sheetTitle">Session</div>
+      <button class="pill" id="closeSheet">Close</button>
+    </div>
+
+    <button class="btn" id="newSession">New Session</button>
+    <button class="btn secondary" id="openLast" style="display:none;">Open Last</button>
+    <button class="btn secondary" id="copyLast" style="display:none;">Copy Link</button>
+
+    <div id="linkBox" class="linkBox"></div>
+  </section>
+
+  <div id="pinModal">
+    <div id="pinCard">
+      <div class="t">Enter PIN</div>
+      <input id="pinInput" placeholder="••••" inputmode="numeric" />
+      <button class="btn" id="pinGo">Unlock</button>
     </div>
   </div>
 
-  <main class="card">
-    <h1>Notes</h1>
-    <p>Personal workspace.</p>
+<script>
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(()=>{});
 
-    <div class="btns">
-      <a class="btn" id="chatBtn" href="#" rel="noopener">Open</a>
+  const PIN_HASH = "7377a71607a8dabc029ab10e7a6a895b92e87762538b10ce8b10c4c9ddc74448";
+  const IDLE_LOCK_MS = 60 * 1000;
 
-      <a class="btn" id="videoCall" href="#" target="_blank" rel="noopener">Video Call</a>
-      <a class="btn" id="audioCall" href="#" target="_blank" rel="noopener">Audio Call</a>
+  const $ = (id) => document.getElementById(id);
 
-      <button id="copyCall" type="button">Copy Call Link</button>
-      <button id="newCall" type="button">New Call Link</button>
+  const storage = {
+    get notes(){ return JSON.parse(localStorage.getItem("decoyNotes") || "null"); },
+    set notes(v){ localStorage.setItem("decoyNotes", JSON.stringify(v)); },
+    get lastLink(){ return localStorage.getItem("lastSessionLink") || ""; },
+    set lastLink(v){ localStorage.setItem("lastSessionLink", v); }
+  };
 
-      <hr>
+  const state = {
+    unlocked: sessionStorage.getItem("unlocked") === "1",
+    editingId: null,
+    idleTimer: null,
+    taps: 0,
+    tapTimer: null
+  };
 
-      <button id="panicLock" type="button">Lock</button>
-    </div>
+  async function sha256Hex(text){
+    const data = new TextEncoder().encode(text);
+    const buf = await crypto.subtle.digest("SHA-256", data);
+    return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("");
+  }
 
-    <div class="note">
-      Install like an app:
-      <br>• iPhone: Safari → Share → Add to Home Screen
-      <br>• Android: Chrome → ⋮ → Add to Home screen
-    </div>
+  function seedNotesIfEmpty(){
+    if (storage.notes) return;
+    storage.notes = [
+      { id: crypto.randomUUID(), title: "Grocery List", body: "Milk\\nEggs\\nBread\\nTea\\nBananas", ts: Date.now()-86400000 },
+      { id: crypto.randomUUID(), title: "Work Tasks", body: "Email\\nSchedule\\nFollow-ups\\nBudget notes", ts: Date.now()-172800000 },
+      { id: crypto.randomUUID(), title: "Ideas", body: "Website tweaks\\nIcon ideas\\nWeekend plan", ts: Date.now()-3600000 },
+      { id: crypto.randomUUID(), title: "Templates", body: "—", ts: Date.now() }
+    ];
+  }
 
-    <div class="small">
-      Tip: If a share preview still shows an old title, share with <b>?v=2</b> at the end of the link once.
-    </div>
-  </main>
+  function formatMeta(ts){
+    const d = new Date(ts);
+    return d.toLocaleDateString(undefined, { month:"short", day:"numeric" });
+  }
+  function previewText(body){
+    const t = (body || "").trim().replace(/\\n+/g, " ");
+    return t.length > 60 ? t.slice(0,60) + "…" : t;
+  }
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, (c)=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+  }
 
-  <script>
-    // Register PWA service worker
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js").catch(()=>{});
+  function renderList(){
+    const term = ($("q").value || "").toLowerCase().trim();
+    const notes = (storage.notes || []).slice().sort((a,b)=>b.ts-a.ts);
+
+    $("list").innerHTML = "";
+    for (const n of notes) {
+      const t = (n.title || "").toLowerCase();
+      const p = (n.body || "").toLowerCase();
+      if (term && !(t.includes(term) || p.includes(term))) continue;
+
+      const card = document.createElement("div");
+      card.className = "noteCard";
+      card.dataset.id = n.id;
+      card.innerHTML = `
+        <div class="noteTitle">${escapeHtml(n.title || "Note")}</div>
+        <div class="noteMeta">${formatMeta(n.ts)}</div>
+        <div class="notePreview">${escapeHtml(previewText(n.body))}</div>
+      `;
+      $("list").appendChild(card);
     }
+  }
 
-    /* ===== CONFIG ===== */
+  function openEditor(note){
+    state.editingId = note.id;
+    $("editorTitle").textContent = note.title || "Note";
+    $("editorText").value = note.body || "";
+    $("editor").style.display = "flex";
+  }
+  function closeEditor(){ $("editor").style.display = "none"; state.editingId = null; }
 
-    // PIN = 1127 (SHA-256)
-    const PIN_HASH = "7377a71607a8dabc029ab10e7a6a895b92e87762538b10ce8b10c4c9ddc74448";
-    const FADE_MS = 220;
+  function openSheet(){
+    $("sheet").classList.add("open");
+    $("sheet").setAttribute("aria-hidden","false");
+    refreshLast();
+  }
+  function closeSheet(){
+    $("sheet").classList.remove("open");
+    $("sheet").setAttribute("aria-hidden","true");
+  }
 
-    // Element private room
-    const ROOM_ID = "!QCDoDUrbQEiLoiTDVl:matrix.org";
-    const ELEMENT_ROOM_URL = "https://app.element.io/#/room/" + ROOM_ID;
+  function showPin(){
+    $("pinInput").value = "";
+    $("pinModal").style.display = "grid";
+    setTimeout(()=> $("pinInput").focus(), 20);
+  }
+  function hidePin(){ $("pinModal").style.display = "none"; }
 
-    // Auto-lock after inactivity
-    const AUTO_LOCK_AFTER_MS = 2 * 60 * 1000; // 2 minutes
+  function lockApp(){
+    state.unlocked = false;
+    sessionStorage.removeItem("unlocked");
+    closeSheet(); closeEditor();
+  }
+  function burnApp(){
+    sessionStorage.removeItem("unlocked");
+    localStorage.removeItem("lastSessionLink");
+    state.unlocked = false;
+    closeSheet(); closeEditor();
+  }
 
-    async function sha256Hex(text){
-      const data = new TextEncoder().encode(text);
-      const buf = await crypto.subtle.digest("SHA-256", data);
-      return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("");
-    }
+  function resetIdle(){
+    clearTimeout(state.idleTimer);
+    state.idleTimer = setTimeout(lockApp, IDLE_LOCK_MS);
+  }
+  ["touchstart","mousemove","keydown","click","scroll"].forEach(evt =>
+    window.addEventListener(evt, resetIdle, { passive:true })
+  );
 
-    function fadeThen(action){
-      document.getElementById("fade").classList.add("on");
-      setTimeout(action, FADE_MS);
-    }
-
-    function lockNow(message=""){
-      document.getElementById("lock").style.display = "grid";
-      document.getElementById("lockMsg").textContent = message;
-      sessionStorage.removeItem("unlocked");
-    }
-
-    function unlockNow(){
-      document.getElementById("lock").style.display = "none";
-      document.getElementById("lockMsg").textContent = "";
-      sessionStorage.setItem("unlocked","1");
-      resetIdleTimer();
-    }
-
-    document.getElementById("unlock").addEventListener("click", async () => {
-      const pin = (document.getElementById("pin").value || "").trim();
-      const h = await sha256Hex(pin);
-      if (h === PIN_HASH) {
-        fadeThen(() => {
-          unlockNow();
-          document.getElementById("fade").classList.remove("on");
-        });
-      } else {
-        document.getElementById("lockMsg").textContent = "Wrong PIN";
-      }
+  async function ensureUnlocked(){
+    if (state.unlocked) return true;
+    showPin();
+    return new Promise((resolve) => {
+      const attempt = async () => {
+        const pin = ($("pinInput").value || "").trim();
+        const h = await sha256Hex(pin);
+        hidePin();
+        if (h === PIN_HASH) {
+          state.unlocked = true;
+          sessionStorage.setItem("unlocked","1");
+          resetIdle();
+          resolve(true);
+        } else {
+          // decoy behavior
+          const notes = storage.notes || [];
+          const decoy = notes.find(n => (n.title || "").toLowerCase().includes("work")) || notes[0];
+          if (decoy) openEditor(decoy);
+          resolve(false);
+        }
+      };
+      $("pinGo").onclick = attempt;
+      $("pinInput").onkeydown = (e) => { if (e.key === "Enter") attempt(); };
+      $("pinModal").onclick = (e) => { if (e.target === $("pinModal")) { hidePin(); resolve(false); } };
     });
+  }
 
-    document.getElementById("pin").addEventListener("keydown",(e)=>{
-      if (e.key === "Enter") document.getElementById("unlock").click();
-    });
+  function b64url(bytes){
+    let s = btoa(String.fromCharCode(...bytes));
+    return s.replace(/\\+/g,'-').replace(/\\//g,'_').replace(/=+$/,'');
+  }
+  function randId(len=14){
+    const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-";
+    const arr = new Uint8Array(len);
+    crypto.getRandomValues(arr);
+    return Array.from(arr, x => chars[x % chars.length]).join('');
+  }
 
-    document.getElementById("chatBtn").addEventListener("click", (e) => {
-      e.preventDefault();
-      if (sessionStorage.getItem("unlocked") !== "1") {
-        lockNow("Enter PIN first.");
-        return;
-      }
-      fadeThen(() => window.location.href = ELEMENT_ROOM_URL);
-    });
+  function refreshLast(){
+    const last = storage.lastLink;
+    const has = !!last;
+    $("openLast").style.display = has ? "block" : "none";
+    $("copyLast").style.display = has ? "block" : "none";
+    $("linkBox").style.display = has ? "block" : "none";
+    if (has) $("linkBox").textContent = last;
+  }
 
-    // Jitsi rotating call link
-    function generateRoom(){
-      const bytes = new Uint8Array(8);
-      crypto.getRandomValues(bytes);
-      return Array.from(bytes, b => b.toString(16).padStart(2,"0")).join("");
+  $("titleTap").addEventListener("click", async () => {
+    state.taps += 1;
+    clearTimeout(state.tapTimer);
+    state.tapTimer = setTimeout(()=> state.taps = 0, 650);
+    if (state.taps >= 3) {
+      state.taps = 0;
+      const ok = await ensureUnlocked();
+      if (ok) openSheet();
     }
+  });
 
-    function newCall(){
-      const room = "notes-" + generateRoom();
-      const base = "https://meet.jit.si/" + room;
-      document.getElementById("videoCall").href = base;
-      document.getElementById("audioCall").href = base + "#config.startWithVideoMuted=true";
-      window.currentCall = base;
+  $("list").addEventListener("click", async (e) => {
+    const card = e.target.closest(".noteCard");
+    if (!card) return;
+    const id = card.dataset.id;
+    const note = (storage.notes || []).find(n => n.id === id);
+    if (!note) return;
+
+    if ((note.title || "").toLowerCase() === "templates") {
+      const ok = await ensureUnlocked();
+      if (ok) openSheet();
+      return;
     }
-    newCall();
+    openEditor(note);
+  });
 
-    document.getElementById("copyCall").addEventListener("click", async () => {
-      try{
-        await navigator.clipboard.writeText(window.currentCall);
-        alert("Copied");
-      } catch {
-        alert("Copy failed. Link:\n\n" + window.currentCall);
-      }
-    });
+  $("newNote").addEventListener("click", () => {
+    const notes = storage.notes || [];
+    const n = { id: crypto.randomUUID(), title: "New Note", body: "", ts: Date.now() };
+    notes.unshift(n);
+    storage.notes = notes;
+    renderList();
+    openEditor(n);
+  });
 
-    document.getElementById("newCall").addEventListener("click", () => {
-      newCall();
-      alert("New link created");
-    });
-
-    document.getElementById("panicLock").addEventListener("click", () => {
-      lockNow("Locked.");
-    });
-
-    // Auto-lock after inactivity
-    let idleTimer = null;
-    function resetIdleTimer(){
-      if (sessionStorage.getItem("unlocked") !== "1") return;
-      clearTimeout(idleTimer);
-      idleTimer = setTimeout(() => lockNow("Locked (inactive)."), AUTO_LOCK_AFTER_MS);
+  $("backBtn").onclick = () => { closeEditor(); renderList(); };
+  $("saveBtn").onclick = () => {
+    const notes = storage.notes || [];
+    const idx = notes.findIndex(n => n.id === state.editingId);
+    if (idx >= 0) {
+      const body = $("editorText").value || "";
+      const title = (body.trim().split("\\n")[0] || "Note").slice(0, 40) || "Note";
+      notes[idx] = { ...notes[idx], title, body, ts: Date.now() };
+      storage.notes = notes;
     }
-    ["mousemove","keydown","touchstart","click","scroll"].forEach(evt => {
-      window.addEventListener(evt, resetIdleTimer, { passive:true });
-    });
+    closeEditor();
+    renderList();
+  };
 
-    // On load
-    if (sessionStorage.getItem("unlocked") === "1") unlockNow();
-    else lockNow();
-  </script>
+  $("closeSheet").onclick = closeSheet;
+  $("lockBtn").onclick = lockApp;
+  $("burnBtn").onclick = burnApp;
+
+  $("newSession").addEventListener("click", async () => {
+    const ok = await ensureUnlocked();
+    if (!ok) return;
+
+    const roomId = randId(14);
+    const keyBytes = new Uint8Array(32);
+    crypto.getRandomValues(keyBytes);
+    const key = b64url(keyBytes);
+
+    const url = `${location.origin}/chat/${roomId}#k=${key}`;
+    storage.lastLink = url;
+    refreshLast();
+    try { await navigator.clipboard.writeText(url); } catch {}
+  });
+
+  $("openLast").addEventListener("click", async () => {
+    const ok = await ensureUnlocked();
+    if (!ok) return;
+    if (storage.lastLink) window.location.href = storage.lastLink;
+  });
+
+  $("copyLast").addEventListener("click", async () => {
+    const ok = await ensureUnlocked();
+    if (!ok) return;
+    try { await navigator.clipboard.writeText(storage.lastLink); } catch {}
+  });
+
+  $("q").addEventListener("input", renderList);
+
+  seedNotesIfEmpty();
+  renderList();
+  resetIdle();
+</script>
 </body>
 </html>
