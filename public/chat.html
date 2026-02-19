@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Notes</title>
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#f2f2f7" />
+  <style>
+    :root{ color-scheme: light; }
+    body{ margin:0; min-height:100vh; font-family:-apple-system,system-ui,Segoe UI,Roboto,sans-serif; background:#f2f2f7; color:#111; display:flex; flex-direction:column; }
+    header{
+      position:sticky; top:0; z-index:10;
+      background:rgba(242,242,247,.92); backdrop-filter:blur(12px);
+      border-bottom:1px solid rgba(0,0,0,.08);
+      padding:12px 14px; display:flex; align-items:center; justify-content:space-between; gap:10px;
+    }
+    .left{ display:flex; flex-direction:column; gap:2px; }
+    .title{ font-weight:900; }
+    .meta{ font-size:12px; color:rgba(0,0,0,.55); }
+    .btnRow{ display:flex; gap:10px; align-items:center; }
+    .pill{ border:1px solid rgba(0,0,0,.12); background:#fff; padding:8px 10px; border-radius:12px; font-weight:800; font-size:13px; cursor:pointer; }
+
+    #log{ flex:1; padding:14px; overflow:auto; display:flex; flex-direction:column; gap:10px; }
+    .bubble{ max-width:78%; padding:11px 12px; border-radius:14px; border:1px solid rgba(0,0,0,.10); background:#fff; line-height:1.35; white-space:pre-wrap; word-break:break-word; }
+    .me{ align-self:flex-end; background:#e9f1ff; border-color:rgba(40,110,255,.18); }
+    .sys{ align-self:center; max-width:92%; font-size:12px; color:rgba(0,0,0,.55); padding:8px 10px; border-radius:12px; background:rgba(255,255,255,.7); border:1px solid rgba(0,0,0,.06); text-align:center; }
+
+    footer{ padding:10px 12px; border-top:1px solid rgba(0,0,0,.08); background:rgba(242,242,247,.92); backdrop-filter:blur(12px); display:flex; flex-direction:column; gap:8px; }
+    .emojiRow{ display:flex; gap:8px; overflow:auto; padding-bottom:2px; }
+    .emojiBtn{ border:1px solid rgba(0,0,0,.10); background:#fff; border-radius:12px; padding:8px 10px; cursor:pointer; font-size:16px; flex:0 0 auto; }
+    .inputRow{ display:flex; gap:10px; }
+    input{ flex:1; padding:14px; border-radius:14px; border:1px solid rgba(0,0,0,.10); background:#fff; outline:none; font-size:16px; }
+    .send{ padding:14px 16px; border-radius:14px; border:1px solid rgba(0,0,0,.12); background:#111; color:#fff; font-weight:900; cursor:pointer; }
+
+    /* Passphrase + PIN modal */
+    #modal{ position:fixed; inset:0; background:rgba(0,0,0,.35); display:grid; place-items:center; z-index:80; }
+    #card{ width:min(440px,92vw); background:#fff; border-radius:18px; padding:18px; border:1px solid rgba(0,0,0,.10); box-shadow:0 30px 70px rgba(0,0,0,.25); }
+    .t{ font-weight:900; font-size:16px; margin-bottom:10px; }
+    .field{ width:100%; padding:14px; border-radius:14px; border:1px solid rgba(0,0,0,.12); background:#f7f7fb; font-size:16px; outline:0; margin-top:10px; }
+    .btn{ width:100%; margin-top:12px; padding:12px; border-radius:14px; border:1px solid rgba(0,0,0,.12); background:#111; color:#fff; font-weight:900; cursor:pointer; }
+    .small{ margin-top:10px; font-size:12px; color:rgba(0,0,0,.65); line-height:1.35; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="left">
+      <div class="title">Notes</div>
+      <div class="meta" id="meta">Locked…</div>
+    </div>
+    <div class="btnRow">
+      <button class="pill" id="lockBtn">Lock</button>
+      <button class="pill" id="endBtn">End</button>
+    </div>
+  </header>
+
+  <div id="log"></div>
+
+  <footer>
+    <div class="emojiRow" id="emojiRow"></div>
+    <div class="inputRow">
+      <input id="text" placeholder="Message…" autocomplete="off" />
+      <button class="send" id="send">Send</button>
+    </div>
+  </footer>
+
+  <div id="modal">
+    <div id="card">
+      <div class="t">Unlock</div>
+      <input id="pin" class="field" placeholder="PIN" inputmode="numeric" />
+      <input id="pass" class="field" placeholder="Passphrase" />
+      <button id="go" class="btn">Continue</button>
+      <div class="small">After both join, confirm the match code shown in the header.</div>
+    </div>
+  </div>
+
+  <script src="/chat.js"></script>
+</body>
+</html>
