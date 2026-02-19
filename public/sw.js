@@ -1,4 +1,3 @@
-
 // public/sw.js
 // Simple cache-first service worker for the "Notes" PWA
 
