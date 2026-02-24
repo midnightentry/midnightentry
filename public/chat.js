@@ -6,7 +6,6 @@ let aesKey = null;
 let roomId = "";
 let rawKeyBytes = null;
 
-let connected = false;
 let ended = false;
 let reconnectTimer = null;
 let reconnectAttempt = 0;
@@ -47,11 +46,12 @@ function addMsg(text, mine=false){
   $("log").scrollTop = $("log").scrollHeight;
 }
 
+function setMeta(text){ $("meta").textContent = text; }
+
 function roomIdFromPath(){
   const parts = location.pathname.split("/").filter(Boolean);
   return parts[1] || "";
 }
-
 function keyFromHash(){
   const m = location.hash.match(/k=([^&]+)/);
   return m ? m[1] : "";
@@ -75,7 +75,6 @@ async function decryptJson(key, ivB64, ctB64){
   return JSON.parse(new TextDecoder().decode(ptBuf));
 }
 
-// Derive final key from (linkKey + passphrase)
 async function deriveKey(linkKeyBytes, passphrase, roomId){
   const baseKey = await crypto.subtle.importKey(
     "raw",
@@ -110,28 +109,9 @@ function matchCode(rawKeyBytes){
   return out.slice(0,3) + "-" + out.slice(3);
 }
 
-function setMeta(text){
-  $("meta").textContent = text;
-}
-
-function setUiConnected(isConnected){
-  connected = isConnected;
+function setConnectedUI(isConnected){
   $("send").disabled = !isConnected;
   $("text").disabled = !isConnected;
-}
-
-function initEmojiRow(){
-  const emojis = ["😀","😂","🥹","😍","😌","🤍","🩵","💙","✨","🔥","🙏🏽","👍🏽"];
-  const row = $("emojiRow");
-  row.innerHTML = "";
-  emojis.forEach(em => {
-    const b = document.createElement("button");
-    b.className = "emojiBtn";
-    b.type = "button";
-    b.textContent = em;
-    b.onclick = () => { $("text").value = ($("text").value || "") + em; $("text").focus(); };
-    row.appendChild(b);
-  });
 }
 
 function clearReconnect(){
@@ -139,13 +119,15 @@ function clearReconnect(){
   reconnectTimer = null;
 }
 
-function scheduleReconnect(reasonText="Reconnecting…"){
+function scheduleReconnect(){
   if (ended) return;
   if (reconnectTimer) return;
 
   reconnectAttempt += 1;
-  const delay = Math.min(12000, 900 + reconnectAttempt * 900); // 0.9s -> up to 12s
-  setMeta(`${matchCode(rawKeyBytes)} • ${reasonText}`);
+  const delay = Math.min(12000, 900 + reconnectAttempt * 900);
+
+  setMeta(`${matchCode(rawKeyBytes)} • Reconnecting…`);
+  addSys("Reconnecting…");
 
   reconnectTimer = setTimeout(async () => {
     reconnectTimer = null;
@@ -157,11 +139,10 @@ async function connectWs(isReconnect=false){
   if (!aesKey || !roomId) return;
 
   clearReconnect();
+  setConnectedUI(false);
 
   try { if (ws) ws.close(); } catch {}
   ws = null;
-
-  setUiConnected(false);
 
   const proto = location.protocol === "https:" ? "wss" : "ws";
   const wsUrl = `${proto}://${location.host}/?room=${encodeURIComponent(roomId)}`;
@@ -170,10 +151,9 @@ async function connectWs(isReconnect=false){
 
   ws.addEventListener("open", () => {
     reconnectAttempt = 0;
-    setUiConnected(true);
+    setConnectedUI(true);
     setMeta(`${matchCode(rawKeyBytes)} • Connected`);
-    if (!isReconnect) addSys("Connected.");
-    else addSys("Reconnected.");
+    addSys(isReconnect ? "Reconnected." : "Connected.");
   });
 
   ws.addEventListener("message", async (ev) => {
@@ -187,7 +167,7 @@ async function connectWs(isReconnect=false){
       }
       if (msg.event === "ended") {
         ended = true;
-        setUiConnected(false);
+        setConnectedUI(false);
         setMeta(`${matchCode(rawKeyBytes)} • Ended`);
         addSys("Session ended.");
         $("log").innerHTML = "";
@@ -204,18 +184,18 @@ async function connectWs(isReconnect=false){
   });
 
   ws.addEventListener("close", (e) => {
-    setUiConnected(false);
+    setConnectedUI(false);
     if (ended) return;
 
     const reason = (e && e.reason) ? String(e.reason) : "";
 
-    // Friendly failures
     if (reason.includes("sealed")) {
       ended = true;
       setMeta(`${matchCode(rawKeyBytes)} • Room full`);
       addSys("Room is already full.");
       return;
     }
+
     if (reason.includes("expired")) {
       ended = true;
       setMeta(`${matchCode(rawKeyBytes)} • Expired`);
@@ -223,21 +203,20 @@ async function connectWs(isReconnect=false){
       return;
     }
 
-    scheduleReconnect("Reconnecting…");
+    scheduleReconnect();
   });
 
   ws.addEventListener("error", () => {
-    setUiConnected(false);
+    setConnectedUI(false);
   });
 
-  // Keepalive ping
   setInterval(() => {
     try { ws && ws.readyState === 1 && ws.send(JSON.stringify({ type:"ping" })); } catch {}
   }, 25000);
 }
 
 async function sendText(){
-  if (!connected || !aesKey) return;
+  if (!ws || ws.readyState !== 1 || !aesKey) return;
 
   const text = ($("text").value || "").trim();
   if (!text) return;
@@ -246,22 +225,19 @@ async function sendText(){
   addMsg(text, true);
 
   const enc = await encryptJson(aesKey, { text, ts: Date.now() });
-  try {
-    ws && ws.readyState === 1 && ws.send(JSON.stringify({ type:"msg", iv: enc.iv, ct: enc.ct }));
-  } catch {}
+  try { ws.send(JSON.stringify({ type:"msg", iv: enc.iv, ct: enc.ct })); } catch {}
 }
 
 function lockNow(){
   sessionStorage.removeItem("unlocked");
-  ended = true; // stop reconnects
+  ended = true;
   clearReconnect();
   try { ws && ws.close(); } catch {}
   ws = null;
 
   $("log").innerHTML = "";
-  setUiConnected(false);
+  setConnectedUI(false);
   setMeta("Locked…");
-
   $("modal").style.display = "grid";
 }
 
@@ -272,58 +248,65 @@ async function unlockFlow(){
 
   const h = await sha256Hex(pin);
 
-  // Decoy behavior: no drama
   if (h !== PIN_HASH) {
     $("modal").style.display = "none";
     addSys(" ");
     return;
   }
 
-  const linkKeyStr = keyFromHash();
-  const linkKey = b64urlToBytes(linkKeyStr);
+  const k = keyFromHash();
+  const linkKey = b64urlToBytes(k);
+  if (linkKey.length !== 32) {
+    setMeta("Invalid key");
+    addSys("Invalid link.");
+    return;
+  }
 
   const raw = await deriveKey(linkKey, pass, roomId);
   rawKeyBytes = raw;
-
   aesKey = await importAesKey(raw);
 
   $("modal").style.display = "none";
-  setMeta(`${matchCode(rawKeyBytes)} • Connecting…`);
-
   ended = false;
+  setMeta(`${matchCode(rawKeyBytes)} • Connecting…`);
   await connectWs(false);
+}
+
+function initEmojiRow(){
+  const emojis = ["😀","😂","🥹","😍","😌","🤍","🩵","💙","✨","🔥","🙏🏽","👍🏽"];
+  const row = $("emojiRow");
+  row.innerHTML = "";
+  emojis.forEach(em => {
+    const b = document.createElement("button");
+    b.className = "emojiBtn";
+    b.type = "button";
+    b.textContent = em;
+    b.onclick = () => { $("text").value = ($("text").value || "") + em; $("text").focus(); };
+    row.appendChild(b);
+  });
 }
 
 (async function main(){
   initEmojiRow();
 
   roomId = roomIdFromPath();
-  const k = keyFromHash();
-
   if (!roomId || !/^[a-zA-Z0-9_-]{6,64}$/.test(roomId)) {
+    setMeta("Invalid");
     addSys("Invalid link.");
-    setMeta("Invalid");
-    setUiConnected(false);
+    setConnectedUI(false);
     return;
   }
-  if (!k) {
-    addSys("Missing key.");
+
+  if (!keyFromHash()) {
     setMeta("Missing key");
-    setUiConnected(false);
+    addSys("Missing key.");
+    setConnectedUI(false);
     return;
   }
 
-  const linkKey = b64urlToBytes(k);
-  if (linkKey.length !== 32) {
-    addSys("Invalid key.");
-    setMeta("Invalid");
-    setUiConnected(false);
-    return;
-  }
-
-  // Start locked
-  setUiConnected(false);
   setMeta("Locked…");
+  setConnectedUI(false);
+
   $("modal").style.display = "grid";
 
   $("go").addEventListener("click", unlockFlow);
@@ -339,8 +322,9 @@ async function unlockFlow(){
     try { ws && ws.readyState === 1 && ws.send(JSON.stringify({ type:"end" })); } catch {}
     try { ws && ws.close(); } catch {}
     ws = null;
+
     $("log").innerHTML = "";
-    setUiConnected(false);
+    setConnectedUI(false);
     setMeta(`${rawKeyBytes ? matchCode(rawKeyBytes) : ""} • Ended`.trim());
     addSys("Ended.");
   });
