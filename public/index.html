@@ -22,7 +22,7 @@
       display:flex; align-items:center; justify-content:space-between;
     }
     .title{ font-weight:900; font-size:20px; user-select:none; position:relative; }
-    .titleHint{ font-size:12px; color:rgba(0,0,0,.45); margin-left:10px; }
+    .hint{ font-size:12px; color:rgba(0,0,0,.45); margin-left:10px; }
     .pill{
       border:1px solid rgba(0,0,0,.12); background:#fff;
       padding:8px 10px; border-radius:12px;
@@ -59,7 +59,7 @@
     }
 
     /* Editor */
-    #editor{ position:fixed; inset:0; background:#f2f2f7; display:none; flex-direction:column; z-index:30; animation:fadeIn .16s ease; }
+    #editor{ position:fixed; inset:0; background:#f2f2f7; display:none; flex-direction:column; z-index:30; }
     #editorHead{
       display:flex; align-items:center; justify-content:space-between; padding:14px 16px 12px;
       background:rgba(242,242,247,.92); backdrop-filter:blur(12px);
@@ -71,7 +71,7 @@
 
     /* Session sheet */
     #sheet{
-      position:fixed; left:0; right:0; bottom:-620px; z-index:40;
+      position:fixed; left:0; right:0; bottom:-650px; z-index:40;
       background:#fff; border:1px solid rgba(0,0,0,.10);
       border-top-left-radius:18px; border-top-right-radius:18px;
       box-shadow:0 -20px 60px rgba(0,0,0,.18);
@@ -97,14 +97,14 @@
 
     /* PIN modal */
     #pinModal{ position:fixed; inset:0; background:rgba(0,0,0,.35); display:none; place-items:center; z-index:80; }
-    #pinCard{ width:min(420px,92vw); background:#fff; border-radius:18px; padding:18px; border:1px solid rgba(0,0,0,.10); box-shadow:0 30px 70px rgba(0,0,0,.25); animation:fadeIn .16s ease; }
+    #pinCard{ width:min(420px,92vw); background:#fff; border-radius:18px; padding:18px; border:1px solid rgba(0,0,0,.10); box-shadow:0 30px 70px rgba(0,0,0,.25); }
     #pinCard .t{ font-weight:900; font-size:16px; margin-bottom:10px; }
     #pinInput{
       width:100%; padding:14px; border-radius:14px; border:1px solid rgba(0,0,0,.12);
       background:#f7f7fb; font-size:18px; letter-spacing:6px; text-align:center; outline:0;
     }
 
-    /* Actions sheet (note long-press) */
+    /* Note actions sheet */
     #actions{
       position:fixed; left:0; right:0; bottom:-420px; z-index:70;
       background:#fff; border:1px solid rgba(0,0,0,.10);
@@ -113,13 +113,13 @@
       padding:14px; transition:bottom .22s ease;
     }
     #actions.open{ bottom:0; }
-    .danger{ background:#ff3b30; border-color:rgba(0,0,0,.0); }
+    .danger{ background:#ff3b30; border-color:rgba(0,0,0,0); color:#fff; }
 
-    /* Undo toast */
+    /* Toast */
     #toast{
       position:fixed; left:12px; right:12px; bottom:-120px; z-index:90;
       background:rgba(17,17,17,.92); color:#fff;
-      border-radius:16px; padding:12px 12px;
+      border-radius:16px; padding:12px;
       display:flex; align-items:center; justify-content:space-between; gap:12px;
       transition:bottom .22s ease;
       box-shadow:0 18px 40px rgba(0,0,0,.25);
@@ -127,7 +127,7 @@
     }
     #toast.show{ bottom:16px; }
     #toastText{ font-size:13px; opacity:.95; }
-    #undoBtn{
+    #toastBtn{
       border:1px solid rgba(255,255,255,.25);
       background:rgba(255,255,255,.12);
       color:#fff;
@@ -136,21 +136,16 @@
       font-weight:900;
       cursor:pointer;
       white-space:nowrap;
+      display:none;
     }
 
-    @keyframes fadeIn{
-      from{ opacity:0; transform: translateY(6px); }
-      to{ opacity:1; transform: translateY(0); }
-    }
-
-    /* Subtle press ring when holding title */
+    /* Title hold highlight */
     .pressing::after{
       content:"";
       position:absolute;
       left:-10px; right:-10px; top:-6px; bottom:-6px;
       border-radius:14px;
       background: rgba(0,0,0,.06);
-      animation: fadeIn .12s ease;
       pointer-events:none;
     }
   </style>
@@ -159,8 +154,8 @@
 <body>
   <header>
     <div style="display:flex; align-items:baseline;">
-      <div class="title" id="titleTap">Notes</div>
-      <div class="titleHint" id="statusHint"></div>
+      <div class="title" id="titleTap">Notes • v4</div>
+      <div class="hint" id="statusHint"></div>
     </div>
     <div style="display:flex; gap:10px;">
       <button class="pill" id="lockBtn">Lock</button>
@@ -178,7 +173,6 @@
 
   <button class="fab" id="newNote">+</button>
 
-  <!-- Editor -->
   <section id="editor">
     <div id="editorHead">
       <button class="pill" id="backBtn">Back</button>
@@ -190,7 +184,6 @@
     </div>
   </section>
 
-  <!-- Session Sheet -->
   <section id="sheet" aria-hidden="true">
     <div class="sheetTop">
       <div class="sheetTitle">Session</div>
@@ -208,7 +201,6 @@
     </div>
   </section>
 
-  <!-- PIN Modal -->
   <div id="pinModal">
     <div id="pinCard">
       <div class="t">Enter PIN</div>
@@ -217,7 +209,6 @@
     </div>
   </div>
 
-  <!-- Note actions -->
   <section id="actions" aria-hidden="true">
     <div class="sheetTop">
       <div class="sheetTitle" id="actTitle">Note</div>
@@ -227,21 +218,16 @@
     <button class="btn danger" id="actDelete">Delete</button>
   </section>
 
-  <!-- Undo toast -->
   <div id="toast">
-    <div id="toastText">Deleted.</div>
-    <button id="undoBtn">Undo</button>
+    <div id="toastText">Saved</div>
+    <button id="toastBtn">Undo</button>
   </div>
 
 <script>
-  // Register SW (safe to fail)
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(()=>{});
 
-  // PIN = 1127 (SHA-256)
   const PIN_HASH = "7377a71607a8dabc029ab10e7a6a895b92e87762538b10ce8b10c4c9ddc74448";
-
-  // Auto-lock settings
-  const IDLE_LOCK_MS = 90 * 1000; // 90 seconds
+  const IDLE_LOCK_MS = 90 * 1000;
 
   const $ = (id) => document.getElementById(id);
 
@@ -259,18 +245,17 @@
     titleHoldTimer: null,
     lastLockTap: 0,
 
-    // long-press note actions
     pressTimer: null,
     pressedNoteId: null,
+    actionTargetId: null,
 
-    // undo
     lastDeleted: null,
-    undoTimer: null
+    undoTimer: null,
+    toastTimer: null
   };
 
-  function setHint(text=""){
-    $("statusHint").textContent = text;
-  }
+  function setHint(t=""){ $("statusHint").textContent = t; }
+  function haptic(){ try { navigator.vibrate && navigator.vibrate(15); } catch {} }
 
   async function sha256Hex(text){
     const data = new TextEncoder().encode(text);
@@ -278,8 +263,16 @@
     return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("");
   }
 
-  function haptic(){
-    try { navigator.vibrate && navigator.vibrate(15); } catch {}
+  function showToast(text, btnText="", onBtn=null, ms=3000){
+    $("toastText").textContent = text;
+    const b = $("toastBtn");
+    b.style.display = btnText ? "inline-block" : "none";
+    b.textContent = btnText || "";
+    b.onclick = onBtn || null;
+
+    $("toast").classList.add("show");
+    if (state.toastTimer) clearTimeout(state.toastTimer);
+    state.toastTimer = setTimeout(() => $("toast").classList.remove("show"), ms);
   }
 
   function seedNotesIfEmpty(){
@@ -310,7 +303,6 @@
     const notes = (storage.notes || []).slice().sort((a,b)=>b.ts-a.ts);
 
     $("list").innerHTML = "";
-
     for (const n of notes) {
       const t = (n.title || "").toLowerCase();
       const p = (n.body || "").toLowerCase();
@@ -319,13 +311,11 @@
       const card = document.createElement("div");
       card.className = "noteCard";
       card.dataset.id = n.id;
-
       card.innerHTML = `
         <div class="noteTitle">${escapeHtml(n.title || "Note")}</div>
         <div class="noteMeta">${formatMeta(n.ts)}</div>
         <div class="notePreview">${escapeHtml(previewText(n.body))}</div>
       `;
-
       $("list").appendChild(card);
     }
   }
@@ -374,22 +364,19 @@
   }
 
   function burnApp(){
-    // keep decoy notes, but clear session traces + last session link
     sessionStorage.removeItem("unlocked");
     localStorage.removeItem("lastSessionLink");
     state.unlocked = false;
     closeSheet();
     closeEditor();
     closeActions();
-    hideToast();
     setHint("");
+    showToast("Cleared");
   }
 
   function resetIdle(){
     clearTimeout(state.idleTimer);
-    state.idleTimer = setTimeout(() => {
-      lockApp();
-    }, IDLE_LOCK_MS);
+    state.idleTimer = setTimeout(lockApp, IDLE_LOCK_MS);
   }
 
   ["touchstart","mousemove","keydown","click","scroll"].forEach(evt =>
@@ -397,7 +384,6 @@
   );
 
   document.addEventListener("visibilitychange", () => {
-    // lock immediately when user switches apps/tabs
     if (document.visibilityState !== "visible") lockApp();
   });
 
@@ -418,7 +404,6 @@
           resetIdle();
           resolve(true);
         } else {
-          // Decoy behavior: open a harmless note
           const notes = storage.notes || [];
           const decoy = notes.find(n => (n.title || "").toLowerCase().includes("work")) || notes[0];
           if (decoy) openEditor(decoy);
@@ -432,7 +417,7 @@
     });
   }
 
-  // Better unlock: long-press "Notes" title
+  // Long-press Notes title to open Session sheet
   function startTitleHold(){
     clearTimeout(state.titleHoldTimer);
     $("titleTap").classList.add("pressing");
@@ -440,7 +425,7 @@
       $("titleTap").classList.remove("pressing");
       const ok = await ensureUnlocked();
       if (ok) openSheet();
-    }, 700);
+    }, 650);
   }
   function endTitleHold(){
     clearTimeout(state.titleHoldTimer);
@@ -454,20 +439,17 @@
   $("titleTap").addEventListener("mouseup", endTitleHold);
   $("titleTap").addEventListener("mouseleave", endTitleHold);
 
-  // Note actions (long press)
-  let actionTargetId = null;
-
+  // Note Actions (long press on note)
   function openActions(noteId){
-    actionTargetId = noteId;
+    state.actionTargetId = noteId;
     const note = (storage.notes || []).find(n => n.id === noteId);
     $("actTitle").textContent = note?.title || "Note";
     $("actions").classList.add("open");
     $("actions").setAttribute("aria-hidden","false");
     haptic();
   }
-
   function closeActions(){
-    actionTargetId = null;
+    state.actionTargetId = null;
     $("actions").classList.remove("open");
     $("actions").setAttribute("aria-hidden","true");
   }
@@ -484,27 +466,19 @@
     state.pressedNoteId = null;
   }
 
-  // Click opens editor (unless actions triggered)
   $("list").addEventListener("click", (e) => {
+    if ($("actions").classList.contains("open")) return;
     const card = e.target.closest(".noteCard");
     if (!card) return;
-
-    // if actions sheet open, ignore clicks
-    if ($("actions").classList.contains("open")) return;
-
-    const id = card.dataset.id;
-    const note = (storage.notes || []).find(n => n.id === id);
-    if (!note) return;
-    openEditor(note);
+    const note = (storage.notes || []).find(n => n.id === card.dataset.id);
+    if (note) openEditor(note);
   });
 
-  // Long-press handlers
   $("list").addEventListener("touchstart", (e) => {
     const card = e.target.closest(".noteCard");
     if (!card) return;
     startNotePress(card.dataset.id);
   }, { passive:true });
-
   $("list").addEventListener("touchend", endNotePress);
   $("list").addEventListener("touchcancel", endNotePress);
 
@@ -516,31 +490,18 @@
   $("list").addEventListener("mouseup", endNotePress);
   $("list").addEventListener("mouseleave", endNotePress);
 
-  // Actions buttons
   $("actClose").onclick = closeActions;
-
   $("actOpen").onclick = () => {
-    const note = (storage.notes || []).find(n => n.id === actionTargetId);
+    const note = (storage.notes || []).find(n => n.id === state.actionTargetId);
     closeActions();
     if (note) openEditor(note);
   };
 
-  function showToast(msg){
-    $("toastText").textContent = msg;
-    $("toast").classList.add("show");
-  }
-  function hideToast(){
-    $("toast").classList.remove("show");
-    if (state.undoTimer) clearTimeout(state.undoTimer);
-    state.undoTimer = null;
-  }
-
   $("actDelete").onclick = () => {
     const notes = storage.notes || [];
-    const idx = notes.findIndex(n => n.id === actionTargetId);
+    const idx = notes.findIndex(n => n.id === state.actionTargetId);
     if (idx < 0) { closeActions(); return; }
 
-    // store deleted for undo
     state.lastDeleted = { note: notes[idx], index: idx };
     notes.splice(idx, 1);
     storage.notes = notes;
@@ -548,28 +509,21 @@
     closeActions();
     renderList();
 
-    showToast("Note deleted");
-    if (state.undoTimer) clearTimeout(state.undoTimer);
-    state.undoTimer = setTimeout(() => {
+    showToast("Note deleted", "Undo", () => {
+      if (!state.lastDeleted) return;
+      const notes2 = storage.notes || [];
+      const { note, index } = state.lastDeleted;
+      const safeIndex = Math.max(0, Math.min(index, notes2.length));
+      notes2.splice(safeIndex, 0, note);
+      storage.notes = notes2;
       state.lastDeleted = null;
-      hideToast();
+      renderList();
+      showToast("Restored");
+      haptic();
     }, 5200);
   };
 
-  $("undoBtn").onclick = () => {
-    if (!state.lastDeleted) { hideToast(); return; }
-    const notes = storage.notes || [];
-    const { note, index } = state.lastDeleted;
-    const safeIndex = Math.max(0, Math.min(index, notes.length));
-    notes.splice(safeIndex, 0, note);
-    storage.notes = notes;
-    state.lastDeleted = null;
-    hideToast();
-    renderList();
-    haptic();
-  };
-
-  // Editor buttons
+  // Editor controls
   $("backBtn").onclick = () => { closeEditor(); renderList(); };
 
   $("saveBtn").onclick = () => {
@@ -584,9 +538,9 @@
     closeEditor();
     renderList();
     haptic();
+    showToast("Saved");
   };
 
-  // New note
   $("newNote").addEventListener("click", () => {
     const notes = storage.notes || [];
     const n = { id: crypto.randomUUID(), title: "New Note", body: "", ts: Date.now() };
@@ -596,19 +550,17 @@
     openEditor(n);
   });
 
-  // Session link generation
+  // Session link generation (ALWAYS shows link)
   function b64url(bytes){
     let s = btoa(String.fromCharCode(...bytes));
     return s.replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
   }
-
   function randId(len=14){
     const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-";
     const arr = new Uint8Array(len);
     crypto.getRandomValues(arr);
     return Array.from(arr, x => chars[x % chars.length]).join('');
   }
-
   function revealLink(url){
     $("linkBox").style.display = "block";
     $("linkBox").textContent = url;
@@ -632,16 +584,11 @@
     revealLink(url);
     haptic();
 
-    // Attempt share right away (works on most phones)
+    // Try native share, but never depend on it
     if (navigator.share) {
-      try {
-        await navigator.share({ title: "Notes", text: "Open this.", url });
-        return;
-      } catch {}
+      try { await navigator.share({ title:"Notes", text:"Open this.", url }); return; } catch {}
     }
-
-    // Clipboard fallback
-    try { await navigator.clipboard.writeText(url); } catch {}
+    try { await navigator.clipboard.writeText(url); showToast("Link copied"); } catch { showToast("Link ready"); }
   });
 
   $("shareBtn").addEventListener("click", async () => {
@@ -651,9 +598,9 @@
     if (!url) return;
 
     if (navigator.share) {
-      try { await navigator.share({ title: "Notes", text: "Open this.", url }); return; } catch {}
+      try { await navigator.share({ title:"Notes", text:"Open this.", url }); return; } catch {}
     }
-    try { await navigator.clipboard.writeText(url); } catch {}
+    try { await navigator.clipboard.writeText(url); showToast("Link copied"); } catch { showToast("Link ready"); }
   });
 
   $("copyBtn").addEventListener("click", async () => {
@@ -661,7 +608,7 @@
     if (!ok) return;
     const url = storage.lastLink;
     if (!url) return;
-    try { await navigator.clipboard.writeText(url); haptic(); } catch {}
+    try { await navigator.clipboard.writeText(url); haptic(); showToast("Copied"); } catch { showToast("Copy failed"); }
   });
 
   $("openBtn").addEventListener("click", async () => {
@@ -672,13 +619,11 @@
     window.location.href = url;
   });
 
-  // Close sheet
   $("closeSheet").onclick = closeSheet;
 
-  // Lock + Burn buttons (+ panic gesture)
+  // Lock & Burn (+ panic double-tap Lock)
   $("lockBtn").addEventListener("click", () => {
     const t = Date.now();
-    // double-tap lock => panic burn
     if (t - state.lastLockTap < 420) {
       burnApp();
       lockApp();
@@ -695,10 +640,8 @@
     haptic();
   });
 
-  // Search
   $("q").addEventListener("input", renderList);
 
-  // Init
   seedNotesIfEmpty();
   renderList();
   resetIdle();
