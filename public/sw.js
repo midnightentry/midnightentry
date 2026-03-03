@@ -1,7 +1,5 @@
 // public/sw.js
-// Cache-busting SW that updates cleanly
-
-const CACHE = "notes-v4";
+const CACHE = "notes-v6";
 
 const ASSETS = [
   "/",
@@ -28,14 +26,15 @@ self.addEventListener("activate", (event) => {
   })());
 });
 
+// Network-first for HTML so updates show; cache-first for assets
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
 
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
 
-  // Network-first for HTML (so updates show), cache-first for assets
-  const isHTML = event.request.headers.get("accept")?.includes("text/html");
+  const accept = event.request.headers.get("accept") || "";
+  const isHTML = accept.includes("text/html") || event.request.mode === "navigate";
 
   if (isHTML) {
     event.respondWith(
