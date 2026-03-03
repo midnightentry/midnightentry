@@ -12,7 +12,7 @@
   <link rel="apple-touch-icon" href="/icon-192.png" />
 
   <style>
-    :root { color-scheme: light; }
+    :root{ color-scheme: light; }
     body{ margin:0; font-family:-apple-system,system-ui,Segoe UI,Roboto,sans-serif; background:#f2f2f7; color:#111; }
     header{
       position:sticky; top:0; z-index:10;
@@ -21,22 +21,39 @@
       padding:14px 16px 12px;
       display:flex; align-items:center; justify-content:space-between;
     }
-    .title{ font-weight:900; font-size:20px; user-select:none; position:relative; }
-    .hint{ font-size:12px; color:rgba(0,0,0,.45); margin-left:10px; }
+    .leftHead{ display:flex; align-items:baseline; gap:10px; }
+    .title{ font-weight:900; font-size:20px; user-select:none; }
+    .sub{ font-size:12px; color:rgba(0,0,0,.55); }
     .pill{
       border:1px solid rgba(0,0,0,.12); background:#fff;
       padding:8px 10px; border-radius:12px;
       font-weight:800; font-size:13px; cursor:pointer;
     }
     .wrap{ max-width:760px; margin:0 auto; padding:16px; }
+
+    /* Folders */
+    .folderList{ display:flex; flex-direction:column; gap:10px; margin-top:6px; }
+    .row{
+      background:#fff; border:1px solid rgba(0,0,0,.08);
+      border-radius:16px; padding:14px;
+      display:flex; align-items:center; justify-content:space-between;
+      box-shadow:0 10px 24px rgba(0,0,0,.04);
+      cursor:pointer;
+      -webkit-tap-highlight-color:transparent;
+      transition:transform .15s ease;
+    }
+    .row:active{ transform:scale(.99); }
+    .row b{ font-weight:900; }
+
+    /* Notes list */
     .search{
       background:#fff; border:1px solid rgba(0,0,0,.10);
       border-radius:14px; padding:12px; display:flex; gap:10px; align-items:center;
       box-shadow:0 6px 18px rgba(0,0,0,.04);
+      margin-top:6px;
     }
     .search input{ border:0; outline:0; width:100%; font-size:15px; background:transparent; }
     .list{ margin-top:14px; display:flex; flex-direction:column; gap:10px; }
-
     .noteCard{
       background:#fff; border:1px solid rgba(0,0,0,.08);
       border-radius:16px; padding:14px; cursor:pointer;
@@ -54,12 +71,12 @@
       width:54px; height:54px; border-radius:18px;
       border:1px solid rgba(0,0,0,.12);
       background:#111; color:#fff; font-weight:900;
-      display:grid; place-items:center; cursor:pointer;
+      display:none; place-items:center; cursor:pointer;
       box-shadow:0 18px 40px rgba(0,0,0,.22);
     }
 
     /* Editor */
-    #editor{ position:fixed; inset:0; background:#f2f2f7; display:none; flex-direction:column; z-index:30; }
+    #editor{ position:fixed; inset:0; background:#f2f2f7; display:none; flex-direction:column; z-index:30; animation:fadeIn .16s ease; }
     #editorHead{
       display:flex; align-items:center; justify-content:space-between; padding:14px 16px 12px;
       background:rgba(242,242,247,.92); backdrop-filter:blur(12px);
@@ -69,9 +86,9 @@
     #editorArea{ flex:1; padding:16px; }
     #editorArea textarea{ width:100%; height:100%; border:0; outline:0; resize:none; background:transparent; font-size:16px; line-height:1.45; }
 
-    /* Session sheet */
+    /* Session Sheet */
     #sheet{
-      position:fixed; left:0; right:0; bottom:-650px; z-index:40;
+      position:fixed; left:0; right:0; bottom:-680px; z-index:40;
       background:#fff; border:1px solid rgba(0,0,0,.10);
       border-top-left-radius:18px; border-top-right-radius:18px;
       box-shadow:0 -20px 60px rgba(0,0,0,.18);
@@ -92,6 +109,12 @@
       border:1px solid rgba(0,0,0,.10); background:#f7f7fb;
       word-break:break-all; font-size:13px; display:none;
     }
+    .codeBox{
+      margin-top:10px; padding:12px; border-radius:14px;
+      border:1px solid rgba(0,0,0,.10); background:#f7f7fb;
+      font-weight:900; letter-spacing:2px; text-align:center;
+      display:none;
+    }
     .row2{ display:flex; gap:10px; margin-top:10px; }
     .row2 .btn{ margin-top:0; }
 
@@ -104,7 +127,7 @@
       background:#f7f7fb; font-size:18px; letter-spacing:6px; text-align:center; outline:0;
     }
 
-    /* Note actions sheet */
+    /* Actions sheet (note long-press) */
     #actions{
       position:fixed; left:0; right:0; bottom:-420px; z-index:70;
       background:#fff; border:1px solid rgba(0,0,0,.10);
@@ -115,7 +138,7 @@
     #actions.open{ bottom:0; }
     .danger{ background:#ff3b30; border-color:rgba(0,0,0,0); color:#fff; }
 
-    /* Toast */
+    /* Undo toast */
     #toast{
       position:fixed; left:12px; right:12px; bottom:-120px; z-index:90;
       background:rgba(17,17,17,.92); color:#fff;
@@ -127,7 +150,7 @@
     }
     #toast.show{ bottom:16px; }
     #toastText{ font-size:13px; opacity:.95; }
-    #toastBtn{
+    #undoBtn{
       border:1px solid rgba(255,255,255,.25);
       background:rgba(255,255,255,.12);
       color:#fff;
@@ -136,26 +159,20 @@
       font-weight:900;
       cursor:pointer;
       white-space:nowrap;
-      display:none;
     }
 
-    /* Title hold highlight */
-    .pressing::after{
-      content:"";
-      position:absolute;
-      left:-10px; right:-10px; top:-6px; bottom:-6px;
-      border-radius:14px;
-      background: rgba(0,0,0,.06);
-      pointer-events:none;
+    @keyframes fadeIn{
+      from{ opacity:0; transform: translateY(6px); }
+      to{ opacity:1; transform: translateY(0); }
     }
   </style>
 </head>
 
 <body>
   <header>
-    <div style="display:flex; align-items:baseline;">
-      <div class="title" id="titleTap">Notes • v4</div>
-      <div class="hint" id="statusHint"></div>
+    <div class="leftHead">
+      <div class="title" id="screenTitle">Folders</div>
+      <div class="sub" id="subTitle"></div>
     </div>
     <div style="display:flex; gap:10px;">
       <button class="pill" id="lockBtn">Lock</button>
@@ -163,7 +180,20 @@
     </div>
   </header>
 
-  <div class="wrap">
+  <div class="wrap" id="foldersView">
+    <div class="folderList">
+      <div class="row" id="goCloud">
+        <div><b>Cloud</b><div class="sub">Notes</div></div>
+        <div style="opacity:.35">›</div>
+      </div>
+      <div class="row" id="goLocal">
+        <div><b>Local</b><div class="sub">Notes</div></div>
+        <div style="opacity:.35">›</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap" id="notesView" style="display:none;">
     <div class="search">
       <span style="opacity:.55">🔎</span>
       <input id="q" placeholder="Search" />
@@ -173,6 +203,7 @@
 
   <button class="fab" id="newNote">+</button>
 
+  <!-- Editor -->
   <section id="editor">
     <div id="editorHead">
       <button class="pill" id="backBtn">Back</button>
@@ -184,6 +215,7 @@
     </div>
   </section>
 
+  <!-- Session Sheet -->
   <section id="sheet" aria-hidden="true">
     <div class="sheetTop">
       <div class="sheetTitle">Session</div>
@@ -192,6 +224,7 @@
 
     <button class="btn" id="newSession">New Session</button>
 
+    <div class="codeBox" id="codeBox"></div>
     <div class="linkBox" id="linkBox"></div>
 
     <div class="row2">
@@ -201,6 +234,7 @@
     </div>
   </section>
 
+  <!-- PIN Modal -->
   <div id="pinModal">
     <div id="pinCard">
       <div class="t">Enter PIN</div>
@@ -209,6 +243,7 @@
     </div>
   </div>
 
+  <!-- Note actions -->
   <section id="actions" aria-hidden="true">
     <div class="sheetTop">
       <div class="sheetTitle" id="actTitle">Note</div>
@@ -218,14 +253,17 @@
     <button class="btn danger" id="actDelete">Delete</button>
   </section>
 
+  <!-- Undo toast -->
   <div id="toast">
-    <div id="toastText">Saved</div>
-    <button id="toastBtn">Undo</button>
+    <div id="toastText">Deleted.</div>
+    <button id="undoBtn">Undo</button>
   </div>
 
 <script>
+  // Service worker
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(()=>{});
 
+  // PIN = 1127 (SHA-256)
   const PIN_HASH = "7377a71607a8dabc029ab10e7a6a895b92e87762538b10ce8b10c4c9ddc74448";
   const IDLE_LOCK_MS = 90 * 1000;
 
@@ -235,26 +273,34 @@
     get notes(){ return JSON.parse(localStorage.getItem("decoyNotes") || "null"); },
     set notes(v){ localStorage.setItem("decoyNotes", JSON.stringify(v)); },
     get lastLink(){ return localStorage.getItem("lastSessionLink") || ""; },
-    set lastLink(v){ localStorage.setItem("lastSessionLink", v); }
+    set lastLink(v){ localStorage.setItem("lastSessionLink", v); },
+    get lastCode(){ return localStorage.getItem("lastSessionCode") || ""; },
+    set lastCode(v){ localStorage.setItem("lastSessionCode", v); }
   };
 
   const state = {
     unlocked: sessionStorage.getItem("unlocked") === "1",
-    editingId: null,
     idleTimer: null,
-    titleHoldTimer: null,
+
+    // secret long-press unlock
+    holdTimer: null,
+
+    // panic
     lastLockTap: 0,
 
+    // editor
+    editingId: null,
+
+    // long-press note actions
     pressTimer: null,
     pressedNoteId: null,
     actionTargetId: null,
 
+    // undo
     lastDeleted: null,
-    undoTimer: null,
-    toastTimer: null
+    undoTimer: null
   };
 
-  function setHint(t=""){ $("statusHint").textContent = t; }
   function haptic(){ try { navigator.vibrate && navigator.vibrate(15); } catch {} }
 
   async function sha256Hex(text){
@@ -263,24 +309,12 @@
     return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("");
   }
 
-  function showToast(text, btnText="", onBtn=null, ms=3000){
-    $("toastText").textContent = text;
-    const b = $("toastBtn");
-    b.style.display = btnText ? "inline-block" : "none";
-    b.textContent = btnText || "";
-    b.onclick = onBtn || null;
-
-    $("toast").classList.add("show");
-    if (state.toastTimer) clearTimeout(state.toastTimer);
-    state.toastTimer = setTimeout(() => $("toast").classList.remove("show"), ms);
-  }
-
   function seedNotesIfEmpty(){
     if (storage.notes) return;
     storage.notes = [
       { id: crypto.randomUUID(), title: "Grocery List", body: "Milk\nEggs\nBread\nTea\nBananas", ts: Date.now()-86400000 },
       { id: crypto.randomUUID(), title: "Work Tasks", body: "Email\nSchedule\nFollow-ups\nBudget notes", ts: Date.now()-172800000 },
-      { id: crypto.randomUUID(), title: "Ideas", body: "Website tweaks\nIcon ideas\nWeekend plan", ts: Date.now()-3600000 }
+      { id: crypto.randomUUID(), title: "Ideas", body: "Weekend plan\nReminders\nNotes", ts: Date.now()-3600000 }
     ];
   }
 
@@ -298,11 +332,30 @@
     return String(s).replace(/[&<>"']/g, (c)=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
   }
 
+  // Views
+  function showFolders(){
+    $("screenTitle").textContent = "Folders";
+    $("subTitle").textContent = "";
+    $("foldersView").style.display = "block";
+    $("notesView").style.display = "none";
+    $("newNote").style.display = "none";
+    closeSheet();
+  }
+
+  function showNotes(label){
+    $("screenTitle").textContent = "Notes";
+    $("subTitle").textContent = label || "";
+    $("foldersView").style.display = "none";
+    $("notesView").style.display = "block";
+    $("newNote").style.display = "grid";
+    renderList();
+  }
+
   function renderList(){
     const term = ($("q").value || "").toLowerCase().trim();
     const notes = (storage.notes || []).slice().sort((a,b)=>b.ts-a.ts);
-
     $("list").innerHTML = "";
+
     for (const n of notes) {
       const t = (n.title || "").toLowerCase();
       const p = (n.body || "").toLowerCase();
@@ -320,39 +373,51 @@
     }
   }
 
+  // Editor
   function openEditor(note){
     state.editingId = note.id;
     $("editorTitle").textContent = note.title || "Note";
     $("editorText").value = note.body || "";
     $("editor").style.display = "flex";
-    setHint("Editing");
   }
 
   function closeEditor(){
     $("editor").style.display = "none";
     state.editingId = null;
-    setHint("");
   }
 
-  function openSheet(){
-    $("sheet").classList.add("open");
-    $("sheet").setAttribute("aria-hidden","false");
-  }
+  $("backBtn").onclick = () => { closeEditor(); renderList(); };
 
-  function closeSheet(){
-    $("sheet").classList.remove("open");
-    $("sheet").setAttribute("aria-hidden","true");
-  }
+  $("saveBtn").onclick = () => {
+    const notes = storage.notes || [];
+    const idx = notes.findIndex(n => n.id === state.editingId);
+    if (idx >= 0) {
+      const body = $("editorText").value || "";
+      const title = (body.trim().split("\n")[0] || "Note").slice(0, 40) || "Note";
+      notes[idx] = { ...notes[idx], title, body, ts: Date.now() };
+      storage.notes = notes;
+    }
+    closeEditor();
+    renderList();
+    haptic();
+  };
 
+  $("newNote").onclick = () => {
+    const notes = storage.notes || [];
+    const n = { id: crypto.randomUUID(), title: "New Note", body: "", ts: Date.now() };
+    notes.unshift(n);
+    storage.notes = notes;
+    renderList();
+    openEditor(n);
+  };
+
+  // PIN modal
   function showPin(){
     $("pinInput").value = "";
     $("pinModal").style.display = "grid";
     setTimeout(()=> $("pinInput").focus(), 30);
   }
-
-  function hidePin(){
-    $("pinModal").style.display = "none";
-  }
+  function hidePin(){ $("pinModal").style.display = "none"; }
 
   function lockApp(){
     state.unlocked = false;
@@ -360,23 +425,22 @@
     closeSheet();
     closeEditor();
     closeActions();
-    setHint("");
   }
 
   function burnApp(){
     sessionStorage.removeItem("unlocked");
     localStorage.removeItem("lastSessionLink");
+    localStorage.removeItem("lastSessionCode");
     state.unlocked = false;
     closeSheet();
     closeEditor();
     closeActions();
-    setHint("");
-    showToast("Cleared");
+    hideToast();
   }
 
   function resetIdle(){
     clearTimeout(state.idleTimer);
-    state.idleTimer = setTimeout(lockApp, IDLE_LOCK_MS);
+    state.idleTimer = setTimeout(() => lockApp(), IDLE_LOCK_MS);
   }
 
   ["touchstart","mousemove","keydown","click","scroll"].forEach(evt =>
@@ -404,9 +468,6 @@
           resetIdle();
           resolve(true);
         } else {
-          const notes = storage.notes || [];
-          const decoy = notes.find(n => (n.title || "").toLowerCase().includes("work")) || notes[0];
-          if (decoy) openEditor(decoy);
           resolve(false);
         }
       };
@@ -417,41 +478,64 @@
     });
   }
 
-  // Long-press Notes title to open Session sheet
-  function startTitleHold(){
-    clearTimeout(state.titleHoldTimer);
-    $("titleTap").classList.add("pressing");
-    state.titleHoldTimer = setTimeout(async () => {
-      $("titleTap").classList.remove("pressing");
+  // Hidden unlock: long-press empty space on the main view
+  function startHiddenHold(){
+    clearTimeout(state.holdTimer);
+    state.holdTimer = setTimeout(async () => {
       const ok = await ensureUnlocked();
       if (ok) openSheet();
-    }, 650);
+    }, 750);
   }
-  function endTitleHold(){
-    clearTimeout(state.titleHoldTimer);
-    $("titleTap").classList.remove("pressing");
+  function endHiddenHold(){
+    clearTimeout(state.holdTimer);
   }
 
-  $("titleTap").addEventListener("touchstart", startTitleHold, { passive:true });
-  $("titleTap").addEventListener("touchend", endTitleHold);
-  $("titleTap").addEventListener("touchcancel", endTitleHold);
-  $("titleTap").addEventListener("mousedown", startTitleHold);
-  $("titleTap").addEventListener("mouseup", endTitleHold);
-  $("titleTap").addEventListener("mouseleave", endTitleHold);
+  // Apply to BOTH folders + notes views (empty space works)
+  $("foldersView").addEventListener("touchstart", startHiddenHold, { passive:true });
+  $("foldersView").addEventListener("touchend", endHiddenHold);
+  $("foldersView").addEventListener("touchcancel", endHiddenHold);
+  $("foldersView").addEventListener("mousedown", startHiddenHold);
+  $("foldersView").addEventListener("mouseup", endHiddenHold);
+  $("foldersView").addEventListener("mouseleave", endHiddenHold);
 
-  // Note Actions (long press on note)
+  $("notesView").addEventListener("touchstart", (e) => {
+    // avoid triggering while pressing a note card
+    if (e.target.closest(".noteCard")) return;
+    startHiddenHold();
+  }, { passive:true });
+  $("notesView").addEventListener("touchend", endHiddenHold);
+  $("notesView").addEventListener("touchcancel", endHiddenHold);
+  $("notesView").addEventListener("mousedown", (e) => {
+    if (e.target.closest(".noteCard")) return;
+    startHiddenHold();
+  });
+  $("notesView").addEventListener("mouseup", endHiddenHold);
+  $("notesView").addEventListener("mouseleave", endHiddenHold);
+
+  // Folder navigation
+  $("goCloud").onclick = () => showNotes("Cloud");
+  $("goLocal").onclick = () => showNotes("Local");
+
+  // Notes click
+  $("list").addEventListener("click", (e) => {
+    if ($("actions").classList.contains("open")) return;
+    const card = e.target.closest(".noteCard");
+    if (!card) return;
+    const note = (storage.notes || []).find(n => n.id === card.dataset.id);
+    if (note) openEditor(note);
+  });
+
+  // Note long-press actions
   function openActions(noteId){
     state.actionTargetId = noteId;
     const note = (storage.notes || []).find(n => n.id === noteId);
     $("actTitle").textContent = note?.title || "Note";
     $("actions").classList.add("open");
-    $("actions").setAttribute("aria-hidden","false");
     haptic();
   }
   function closeActions(){
     state.actionTargetId = null;
     $("actions").classList.remove("open");
-    $("actions").setAttribute("aria-hidden","true");
   }
 
   function startNotePress(noteId){
@@ -465,14 +549,6 @@
     clearTimeout(state.pressTimer);
     state.pressedNoteId = null;
   }
-
-  $("list").addEventListener("click", (e) => {
-    if ($("actions").classList.contains("open")) return;
-    const card = e.target.closest(".noteCard");
-    if (!card) return;
-    const note = (storage.notes || []).find(n => n.id === card.dataset.id);
-    if (note) openEditor(note);
-  });
 
   $("list").addEventListener("touchstart", (e) => {
     const card = e.target.closest(".noteCard");
@@ -497,6 +573,15 @@
     if (note) openEditor(note);
   };
 
+  function showToast(){
+    $("toast").classList.add("show");
+  }
+  function hideToast(){
+    $("toast").classList.remove("show");
+    if (state.undoTimer) clearTimeout(state.undoTimer);
+    state.undoTimer = null;
+  }
+
   $("actDelete").onclick = () => {
     const notes = storage.notes || [];
     const idx = notes.findIndex(n => n.id === state.actionTargetId);
@@ -509,48 +594,42 @@
     closeActions();
     renderList();
 
-    showToast("Note deleted", "Undo", () => {
-      if (!state.lastDeleted) return;
-      const notes2 = storage.notes || [];
-      const { note, index } = state.lastDeleted;
-      const safeIndex = Math.max(0, Math.min(index, notes2.length));
-      notes2.splice(safeIndex, 0, note);
-      storage.notes = notes2;
+    $("toastText").textContent = "Note deleted";
+    showToast();
+
+    if (state.undoTimer) clearTimeout(state.undoTimer);
+    state.undoTimer = setTimeout(() => {
       state.lastDeleted = null;
-      renderList();
-      showToast("Restored");
-      haptic();
+      hideToast();
     }, 5200);
   };
 
-  // Editor controls
-  $("backBtn").onclick = () => { closeEditor(); renderList(); };
-
-  $("saveBtn").onclick = () => {
+  $("undoBtn").onclick = () => {
+    if (!state.lastDeleted) { hideToast(); return; }
     const notes = storage.notes || [];
-    const idx = notes.findIndex(n => n.id === state.editingId);
-    if (idx >= 0) {
-      const body = $("editorText").value || "";
-      const title = (body.trim().split("\n")[0] || "Note").slice(0, 40) || "Note";
-      notes[idx] = { ...notes[idx], title, body, ts: Date.now() };
-      storage.notes = notes;
-    }
-    closeEditor();
+    const { note, index } = state.lastDeleted;
+    const safeIndex = Math.max(0, Math.min(index, notes.length));
+    notes.splice(safeIndex, 0, note);
+    storage.notes = notes;
+    state.lastDeleted = null;
+    hideToast();
     renderList();
     haptic();
-    showToast("Saved");
   };
 
-  $("newNote").addEventListener("click", () => {
-    const notes = storage.notes || [];
-    const n = { id: crypto.randomUUID(), title: "New Note", body: "", ts: Date.now() };
-    notes.unshift(n);
-    storage.notes = notes;
-    renderList();
-    openEditor(n);
-  });
+  // Session Sheet
+  function openSheet(){
+    $("sheet").classList.add("open");
+    // show last if present
+    const last = storage.lastLink;
+    const code = storage.lastCode;
+    if (last) revealSession(last, code);
+  }
+  function closeSheet(){
+    $("sheet").classList.remove("open");
+  }
+  $("closeSheet").onclick = closeSheet;
 
-  // Session link generation (ALWAYS shows link)
   function b64url(bytes){
     let s = btoa(String.fromCharCode(...bytes));
     return s.replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
@@ -561,9 +640,20 @@
     crypto.getRandomValues(arr);
     return Array.from(arr, x => chars[x % chars.length]).join('');
   }
-  function revealLink(url){
+  function roomCode6(){
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    const arr = new Uint8Array(6);
+    crypto.getRandomValues(arr);
+    return Array.from(arr, x => chars[x % chars.length]).join('');
+  }
+
+  function revealSession(url, code){
+    $("codeBox").style.display = "block";
+    $("codeBox").textContent = code ? `ROOM CODE: ${code}` : "ROOM CODE: —";
+
     $("linkBox").style.display = "block";
     $("linkBox").textContent = url;
+
     $("shareBtn").style.display = "block";
     $("copyBtn").style.display = "block";
     $("openBtn").style.display = "block";
@@ -579,28 +669,32 @@
     const key = b64url(keyBytes);
 
     const url = `${location.origin}/chat/${roomId}#k=${key}`;
-    storage.lastLink = url;
+    const code = roomCode6();
 
-    revealLink(url);
+    storage.lastLink = url;
+    storage.lastCode = code;
+
+    revealSession(url, code);
     haptic();
 
-    // Try native share, but never depend on it
+    // Try native share (best on mobile), fallback to clipboard
     if (navigator.share) {
-      try { await navigator.share({ title:"Notes", text:"Open this.", url }); return; } catch {}
+      try { await navigator.share({ title:"Notes", text:`Code: ${code}`, url }); return; } catch {}
     }
-    try { await navigator.clipboard.writeText(url); showToast("Link copied"); } catch { showToast("Link ready"); }
+    try { await navigator.clipboard.writeText(url); } catch {}
   });
 
   $("shareBtn").addEventListener("click", async () => {
     const ok = await ensureUnlocked();
     if (!ok) return;
     const url = storage.lastLink;
+    const code = storage.lastCode;
     if (!url) return;
 
     if (navigator.share) {
-      try { await navigator.share({ title:"Notes", text:"Open this.", url }); return; } catch {}
+      try { await navigator.share({ title:"Notes", text:`Code: ${code || ""}`.trim(), url }); return; } catch {}
     }
-    try { await navigator.clipboard.writeText(url); showToast("Link copied"); } catch { showToast("Link ready"); }
+    try { await navigator.clipboard.writeText(url); } catch {}
   });
 
   $("copyBtn").addEventListener("click", async () => {
@@ -608,7 +702,7 @@
     if (!ok) return;
     const url = storage.lastLink;
     if (!url) return;
-    try { await navigator.clipboard.writeText(url); haptic(); showToast("Copied"); } catch { showToast("Copy failed"); }
+    try { await navigator.clipboard.writeText(url); haptic(); } catch {}
   });
 
   $("openBtn").addEventListener("click", async () => {
@@ -619,9 +713,10 @@
     window.location.href = url;
   });
 
-  $("closeSheet").onclick = closeSheet;
+  // Search
+  $("q").addEventListener("input", renderList);
 
-  // Lock & Burn (+ panic double-tap Lock)
+  // Lock + Burn (+ panic)
   $("lockBtn").addEventListener("click", () => {
     const t = Date.now();
     if (t - state.lastLockTap < 420) {
@@ -640,10 +735,9 @@
     haptic();
   });
 
-  $("q").addEventListener("input", renderList);
-
+  // Init
   seedNotesIfEmpty();
-  renderList();
+  showFolders();
   resetIdle();
 </script>
 </body>
