@@ -10,6 +10,13 @@ let ended = false;
 let reconnectTimer = null;
 let reconnectAttempt = 0;
 
+// WebRTC
+let pc = null;
+let localStream = null;
+let remoteStream = null;
+let inCall = false;
+let pendingOffer = null;
+
 async function sha256Hex(text){
   const data = new TextEncoder().encode(text);
   const buf = await crypto.subtle.digest("SHA-256", data);
@@ -75,6 +82,7 @@ async function decryptJson(key, ivB64, ctB64){
   return JSON.parse(new TextDecoder().decode(ptBuf));
 }
 
+// Derive final key from (linkKey + passphrase)
 async function deriveKey(linkKeyBytes, passphrase, roomId){
   const baseKey = await crypto.subtle.importKey(
     "raw",
@@ -135,6 +143,10 @@ function scheduleReconnect(){
   }, delay);
 }
 
+function wsSend(obj){
+  try { ws && ws.readyState === 1 && ws.send(JSON.stringify(obj)); } catch {}
+}
+
 async function connectWs(isReconnect=false){
   if (!aesKey || !roomId) return;
 
@@ -146,7 +158,6 @@ async function connectWs(isReconnect=false){
 
   const proto = location.protocol === "https:" ? "wss" : "ws";
   const wsUrl = `${proto}://${location.host}/?room=${encodeURIComponent(roomId)}`;
-
   ws = new WebSocket(wsUrl);
 
   ws.addEventListener("open", () => {
@@ -171,6 +182,7 @@ async function connectWs(isReconnect=false){
         setMeta(`${matchCode(rawKeyBytes)} • Ended`);
         addSys("Session ended.");
         $("log").innerHTML = "";
+        await endCall(true);
         return;
       }
     }
@@ -180,6 +192,12 @@ async function connectWs(isReconnect=false){
         const obj = await decryptJson(aesKey, msg.iv, msg.ct);
         if (obj && typeof obj.text === "string") addMsg(obj.text, false);
       } catch {}
+      return;
+    }
+
+    if (msg.type === "rtc") {
+      await handleRtc(msg.kind, msg.data);
+      return;
     }
   });
 
@@ -206,13 +224,9 @@ async function connectWs(isReconnect=false){
     scheduleReconnect();
   });
 
-  ws.addEventListener("error", () => {
-    setConnectedUI(false);
-  });
+  ws.addEventListener("error", () => setConnectedUI(false));
 
-  setInterval(() => {
-    try { ws && ws.readyState === 1 && ws.send(JSON.stringify({ type:"ping" })); } catch {}
-  }, 25000);
+  setInterval(() => wsSend({ type:"ping" }), 25000);
 }
 
 async function sendText(){
@@ -225,9 +239,195 @@ async function sendText(){
   addMsg(text, true);
 
   const enc = await encryptJson(aesKey, { text, ts: Date.now() });
-  try { ws.send(JSON.stringify({ type:"msg", iv: enc.iv, ct: enc.ct })); } catch {}
+  wsSend({ type:"msg", iv: enc.iv, ct: enc.ct });
 }
 
+/* =========================
+   ⋯ menu
+   ========================= */
+function closeMenu(){
+  $("menuMask").style.display = "none";
+  $("menu").style.display = "none";
+}
+function openMenu(){
+  $("menuMask").style.display = "block";
+  $("menu").style.display = "block";
+}
+$("menuBtn").addEventListener("click", () => {
+  if ($("menu").style.display === "block") closeMenu();
+  else openMenu();
+});
+$("menuMask").addEventListener("click", closeMenu);
+
+/* =========================
+   Calls: WebRTC (audio/video)
+   ========================= */
+
+function showCallUI(show){
+  $("callWrap").style.display = show ? "block" : "none";
+}
+
+function setCallStatus(t){
+  $("callStatus").textContent = t;
+}
+
+function makePeerConnection(){
+  pc = new RTCPeerConnection({
+    iceServers: [
+      { urls: "stun:stun.l.google.com:19302" },
+      { urls: "stun:stun1.l.google.com:19302" }
+    ]
+  });
+
+  remoteStream = new MediaStream();
+  $("remoteVideo").srcObject = remoteStream;
+
+  pc.ontrack = (event) => {
+    event.streams[0].getTracks().forEach(t => remoteStream.addTrack(t));
+  };
+
+  pc.onicecandidate = (event) => {
+    if (event.candidate) {
+      wsSend({ type:"rtc", kind:"ice", data: event.candidate });
+    }
+  };
+
+  pc.onconnectionstatechange = () => {
+    if (!pc) return;
+    if (pc.connectionState === "connected") {
+      inCall = true;
+      setCallStatus("In call");
+      setMeta(`${matchCode(rawKeyBytes)} • In call`);
+      addSys("Call connected.");
+    }
+  };
+}
+
+async function startCall({ video }){
+  closeMenu();
+  if (!ws || ws.readyState !== 1) return addSys("Not connected.");
+  if (inCall) return;
+
+  try{
+    localStream = await navigator.mediaDevices.getUserMedia({ audio:true, video: !!video });
+  } catch {
+    addSys("Microphone/camera blocked.");
+    return;
+  }
+
+  makePeerConnection();
+  localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+
+  $("localVideo").srcObject = localStream;
+  showCallUI(true);
+
+  setCallStatus(video ? "Calling (video)…" : "Calling (audio)…");
+  setMeta(`${matchCode(rawKeyBytes)} • Calling…`);
+
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
+
+  wsSend({ type:"rtc", kind:"offer", data: { sdp: offer.sdp, type: offer.type, video: !!video } });
+}
+
+async function handleRtc(kind, data){
+  if (kind === "hangup") {
+    addSys("Call ended.");
+    await endCall(true);
+    setMeta(`${matchCode(rawKeyBytes)} • Connected`);
+    return;
+  }
+
+  if (kind === "offer") {
+    if (inCall) return;
+    pendingOffer = data;
+    addSys(data?.video ? "Incoming video call…" : "Incoming audio call…");
+    // auto-accept to keep it simple/discreet
+    await acceptOffer();
+    return;
+  }
+
+  if (kind === "answer") {
+    if (!pc) return;
+    await pc.setRemoteDescription(new RTCSessionDescription(data));
+    return;
+  }
+
+  if (kind === "ice") {
+    if (!pc) return;
+    try { await pc.addIceCandidate(new RTCIceCandidate(data)); } catch {}
+    return;
+  }
+}
+
+async function acceptOffer(){
+  if (!pendingOffer) return;
+
+  try{
+    localStream = await navigator.mediaDevices.getUserMedia({ audio:true, video: !!pendingOffer.video });
+  } catch {
+    addSys("Microphone/camera blocked.");
+    pendingOffer = null;
+    return;
+  }
+
+  makePeerConnection();
+  localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+
+  $("localVideo").srcObject = localStream;
+  showCallUI(true);
+
+  setCallStatus(pendingOffer.video ? "Answering (video)…" : "Answering (audio)…");
+
+  await pc.setRemoteDescription(new RTCSessionDescription({ type:"offer", sdp: pendingOffer.sdp }));
+
+  const answer = await pc.createAnswer();
+  await pc.setLocalDescription(answer);
+
+  wsSend({ type:"rtc", kind:"answer", data: { sdp: answer.sdp, type: answer.type } });
+
+  inCall = true;
+  setCallStatus("In call");
+  setMeta(`${matchCode(rawKeyBytes)} • In call`);
+  pendingOffer = null;
+}
+
+async function endCall(silent){
+  if (pc) {
+    try { pc.ontrack = null; pc.onicecandidate = null; } catch {}
+  }
+
+  if (localStream) {
+    localStream.getTracks().forEach(t => { try { t.stop(); } catch {} });
+  }
+
+  pc = null;
+  localStream = null;
+  remoteStream = null;
+  inCall = false;
+  pendingOffer = null;
+
+  $("localVideo").srcObject = null;
+  $("remoteVideo").srcObject = null;
+  showCallUI(false);
+
+  if (!silent) {
+    wsSend({ type:"rtc", kind:"hangup", data:{} });
+    addSys("Call ended.");
+  }
+}
+
+$("audioCall").addEventListener("click", () => startCall({ video:false }));
+$("videoCall").addEventListener("click", () => startCall({ video:true }));
+$("hangCall").addEventListener("click", async () => {
+  closeMenu();
+  await endCall(false);
+  setMeta(`${matchCode(rawKeyBytes)} • Connected`);
+});
+
+/* =========================
+   Lock / Unlock
+   ========================= */
 function lockNow(){
   sessionStorage.removeItem("unlocked");
   ended = true;
@@ -239,6 +439,8 @@ function lockNow(){
   setConnectedUI(false);
   setMeta("Locked…");
   $("modal").style.display = "grid";
+
+  endCall(true);
 }
 
 async function unlockFlow(){
@@ -247,7 +449,6 @@ async function unlockFlow(){
   if (!pin || !pass) return;
 
   const h = await sha256Hex(pin);
-
   if (h !== PIN_HASH) {
     $("modal").style.display = "none";
     addSys(" ");
@@ -257,7 +458,7 @@ async function unlockFlow(){
   const k = keyFromHash();
   const linkKey = b64urlToBytes(k);
   if (linkKey.length !== 32) {
-    setMeta("Invalid key");
+    setMeta("Invalid link");
     addSys("Invalid link.");
     return;
   }
@@ -272,6 +473,7 @@ async function unlockFlow(){
   await connectWs(false);
 }
 
+/* Emoji row */
 function initEmojiRow(){
   const emojis = ["😀","😂","🥹","😍","😌","🤍","🩵","💙","✨","🔥","🙏🏽","👍🏽"];
   const row = $("emojiRow");
@@ -306,7 +508,6 @@ function initEmojiRow(){
 
   setMeta("Locked…");
   setConnectedUI(false);
-
   $("modal").style.display = "grid";
 
   $("go").addEventListener("click", unlockFlow);
@@ -316,10 +517,10 @@ function initEmojiRow(){
   $("send").addEventListener("click", sendText);
   $("text").addEventListener("keydown", (e) => { if (e.key === "Enter") sendText(); });
 
-  $("endBtn").addEventListener("click", () => {
+  $("endBtn").addEventListener("click", async () => {
     ended = true;
     clearReconnect();
-    try { ws && ws.readyState === 1 && ws.send(JSON.stringify({ type:"end" })); } catch {}
+    wsSend({ type:"end" });
     try { ws && ws.close(); } catch {}
     ws = null;
 
@@ -327,6 +528,7 @@ function initEmojiRow(){
     setConnectedUI(false);
     setMeta(`${rawKeyBytes ? matchCode(rawKeyBytes) : ""} • Ended`.trim());
     addSys("Ended.");
+    await endCall(true);
   });
 
   $("lockBtn").addEventListener("click", lockNow);
