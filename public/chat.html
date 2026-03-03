@@ -20,11 +20,30 @@
     .meta{ font-size:12px; color:rgba(0,0,0,.55); }
     .btnRow{ display:flex; gap:10px; align-items:center; }
     .pill{ border:1px solid rgba(0,0,0,.12); background:#fff; padding:8px 10px; border-radius:12px; font-weight:800; font-size:13px; cursor:pointer; }
+    .dots{ font-weight:900; letter-spacing:2px; }
 
     #log{ flex:1; padding:14px; overflow:auto; display:flex; flex-direction:column; gap:10px; }
     .bubble{ max-width:78%; padding:11px 12px; border-radius:14px; border:1px solid rgba(0,0,0,.10); background:#fff; line-height:1.35; white-space:pre-wrap; word-break:break-word; }
     .me{ align-self:flex-end; background:#e9f1ff; border-color:rgba(40,110,255,.18); }
     .sys{ align-self:center; max-width:92%; font-size:12px; color:rgba(0,0,0,.55); padding:8px 10px; border-radius:12px; background:rgba(255,255,255,.7); border:1px solid rgba(0,0,0,.06); text-align:center; }
+
+    #callWrap{
+      display:none;
+      padding:10px 12px;
+      border-top:1px solid rgba(0,0,0,.08);
+      background:rgba(242,242,247,.92);
+      backdrop-filter:blur(12px);
+      gap:10px;
+    }
+    #callWrap video{
+      width:100%;
+      max-height:220px;
+      border-radius:14px;
+      border:1px solid rgba(0,0,0,.10);
+      background:#000;
+    }
+    #callGrid{ display:flex; gap:10px; }
+    #callGrid video{ width:50%; }
 
     footer{ padding:10px 12px; border-top:1px solid rgba(0,0,0,.08); background:rgba(242,242,247,.92); backdrop-filter:blur(12px); display:flex; flex-direction:column; gap:8px; }
     .emojiRow{ display:flex; gap:8px; overflow:auto; padding-bottom:2px; }
@@ -39,6 +58,18 @@
     .field{ width:100%; padding:14px; border-radius:14px; border:1px solid rgba(0,0,0,.12); background:#f7f7fb; font-size:16px; outline:0; margin-top:10px; }
     .btn{ width:100%; margin-top:12px; padding:12px; border-radius:14px; border:1px solid rgba(0,0,0,.12); background:#111; color:#fff; font-weight:900; cursor:pointer; }
     .small{ margin-top:10px; font-size:12px; color:rgba(0,0,0,.65); line-height:1.35; }
+
+    /* ⋯ menu */
+    #menuMask{ position:fixed; inset:0; background:rgba(0,0,0,.25); display:none; z-index:90; }
+    #menu{
+      position:fixed; right:12px; top:64px; z-index:95;
+      background:#fff; border:1px solid rgba(0,0,0,.10);
+      border-radius:14px; box-shadow:0 24px 60px rgba(0,0,0,.18);
+      display:none; min-width:180px; overflow:hidden;
+    }
+    .menuItem{ padding:12px 12px; cursor:pointer; font-weight:800; font-size:13px; }
+    .menuItem:hover{ background:#f7f7fb; }
+    .menuDanger{ color:#ff3b30; }
   </style>
 </head>
 <body>
@@ -48,12 +79,21 @@
       <div class="meta" id="meta">Locked…</div>
     </div>
     <div class="btnRow">
+      <button class="pill dots" id="menuBtn">⋯</button>
       <button class="pill" id="lockBtn">Lock</button>
       <button class="pill" id="endBtn">End</button>
     </div>
   </header>
 
   <div id="log"></div>
+
+  <div id="callWrap">
+    <div class="meta" id="callStatus">Call</div>
+    <div id="callGrid">
+      <video id="localVideo" autoplay muted playsinline></video>
+      <video id="remoteVideo" autoplay playsinline></video>
+    </div>
+  </div>
 
   <footer>
     <div class="emojiRow" id="emojiRow"></div>
@@ -71,6 +111,13 @@
       <button id="go" class="btn">Continue</button>
       <div class="small">Confirm the match code with the other person after you connect.</div>
     </div>
+  </div>
+
+  <div id="menuMask"></div>
+  <div id="menu">
+    <div class="menuItem" id="audioCall">Audio call</div>
+    <div class="menuItem" id="videoCall">Video call</div>
+    <div class="menuItem menuDanger" id="hangCall">Hang up</div>
   </div>
 
   <script src="/chat.js"></script>
